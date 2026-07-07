@@ -1,0 +1,2 @@
+// Asset Assignments module
+export {};
