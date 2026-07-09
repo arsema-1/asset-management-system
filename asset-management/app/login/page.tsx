@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,6 +11,7 @@ export default function LoginPage() {
   const [role, setRole] = useState('employee');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,8 +19,18 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // TODO: Implement login API call
-      console.log('Login attempt:', { email, password, role });
+      if (role === 'admin') {
+        const validEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+        const validPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+        if (email !== validEmail || password !== validPassword) {
+          setError('Invalid email or password.');
+          setLoading(false);
+          return;
+        }
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/employee/dashboard');
+      }
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -26,85 +39,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
-          Asset Management System
-        </h1>
+    <main className="auth-page">
+      <section className="phone-frame" aria-label="Login">
+        <div className="auth-card">
+          <h1>Login</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role Selection */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">Login As</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="employee">Employee</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          {/* Email Field */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+          <form onSubmit={handleSubmit} className="form-stack">
+            <div className="field">
+              <label htmlFor="role">Login As</label>
+              <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
-          )}
 
-          {/* Login Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:bg-gray-400"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-        {/* Sign Up Link (only for employees) */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/signup" className="text-blue-600 hover:text-blue-800 font-semibold">
-              Sign up here
-            </Link>
-          </p>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error && <p className="alert error">{error}</p>}
+
+            <div className="auth-actions">
+              <Link href="/signup" className="small-link">
+                SignUp
+              </Link>
+              <Link href="/forgot-password" className="small-link">
+                Forget Password?
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="arrow-button"
+                aria-label="Login"
+              >
+                {loading ? '...' : <Image src="/icons/next_icon.png" alt="Login" width={28} height={28} />}
+              </button>
+            </div>
+          </form>
         </div>
-
-        {/* Note for Admins */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-700">
-          <p className="font-semibold">Admin Note:</p>
-          <p>Admins must be created by the system administrator.</p>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
