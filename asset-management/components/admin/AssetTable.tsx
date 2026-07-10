@@ -1,10 +1,5 @@
 import Link from 'next/link';
-
-const statusStyles: Record<string, string> = {
-  Available: 'bg-[#d1fae5] text-[#065f46]',
-  Assigned: 'bg-[#d3e4fe] text-[#0b1c30]',
-  'In Repair': 'bg-[#ffdad6] text-[#93000a]',
-};
+import StatusBadge from '@/components/shared/StatusBadge';
 
 const categoryIcons: Record<string, string> = {
   Laptop: 'laptop_mac',
@@ -69,9 +64,7 @@ export default function AssetTable() {
 
                 {/* Status */}
                 <td className="px-lg py-md text-center">
-                  <span className={`px-sm py-[2px] text-label-sm rounded-full font-bold ${statusStyles[asset.status]}`}>
-                    {asset.status}
-                  </span>
+                  <StatusBadge status={asset.status === 'In Repair' ? 'maintenance' : asset.status.toLowerCase()} label={asset.status} />
                 </td>
 
                 {/* Assigned To */}

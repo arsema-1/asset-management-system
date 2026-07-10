@@ -1,3 +1,5 @@
+import StatusBadge from '@/components/shared/StatusBadge';
+
 const records = [
   {
     date: 'May 15, 2024',
@@ -44,9 +46,7 @@ export default function MaintenanceHistory() {
                 <td className="px-lg py-4 text-body-sm">{r.description}</td>
                 <td className="px-lg py-4 text-body-sm text-right whitespace-nowrap">{r.cost}</td>
                 <td className="px-lg py-4">
-                  <span className="bg-[#d1fae5] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    {r.status}
-                  </span>
+                  <StatusBadge status={r.status} />
                 </td>
               </tr>
             ))}

@@ -6,17 +6,14 @@ const departmentStyles: Record<string, string> = {
   Marketing: 'bg-[#ede9fe] text-[#4c1d95]',
 };
 
-const statusStyles: Record<string, string> = {
-  Active: 'bg-green-100 text-green-800',
-  'On Leave': 'bg-amber-100 text-amber-800',
-  Inactive: 'bg-red-100 text-red-800',
+import StatusBadge from '@/components/shared/StatusBadge';
+
+const employeeStatusMap: Record<string, string> = {
+  Active: 'available',
+  'On Leave': 'maintenance',
+  Inactive: 'retired',
 };
 
-const statusDotStyles: Record<string, string> = {
-  Active: 'bg-green-600',
-  'On Leave': 'bg-amber-600',
-  Inactive: 'bg-red-600',
-};
 
 interface Employee {
   id: string;
@@ -89,10 +86,7 @@ export default function EmployeeTable() {
 
                 {/* Status */}
                 <td className="px-lg py-4">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${statusStyles[emp.status]}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${statusDotStyles[emp.status]}`} />
-                    {emp.status}
-                  </span>
+                  <StatusBadge status={employeeStatusMap[emp.status] ?? 'retired'} label={emp.status} dot />
                 </td>
 
                 {/* Actions */}

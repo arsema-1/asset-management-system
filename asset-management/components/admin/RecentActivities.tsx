@@ -1,3 +1,5 @@
+import StatusBadge from '@/components/shared/StatusBadge';
+
 const activities = [
   {
     initials: 'JS',
@@ -10,7 +12,6 @@ const activities = [
     date: 'Oct 24, 2024',
     time: '10:45 AM',
     status: 'Completed',
-    statusClass: 'bg-[#d1fae5] text-[#065f46]',
   },
   {
     initials: 'MR',
@@ -23,7 +24,6 @@ const activities = [
     date: 'Oct 24, 2024',
     time: '09:12 AM',
     status: 'In Review',
-    statusClass: 'bg-[#fef3c7] text-[#92400e]',
   },
   {
     initials: 'AH',
@@ -36,7 +36,6 @@ const activities = [
     date: 'Oct 23, 2024',
     time: '04:30 PM',
     status: 'Verified',
-    statusClass: 'bg-[#d1fae5] text-[#065f46]',
   },
   {
     initials: 'BW',
@@ -49,7 +48,6 @@ const activities = [
     date: 'Oct 23, 2024',
     time: '02:15 PM',
     status: 'Delayed',
-    statusClass: 'bg-[#fee2e2] text-[#991b1b]',
   },
 ];
 
@@ -95,9 +93,7 @@ export default function RecentActivities() {
                   <p className="text-[11px] text-on-surface-variant">{a.time}</p>
                 </td>
                 <td className="px-md py-md">
-                  <span className={`px-sm py-[2px] rounded-full text-label-sm font-bold ${a.statusClass}`}>
-                    {a.status}
-                  </span>
+                  <StatusBadge status={a.status} />
                 </td>
               </tr>
             ))}

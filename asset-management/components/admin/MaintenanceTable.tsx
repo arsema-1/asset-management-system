@@ -1,7 +1,9 @@
-const statusStyles: Record<string, string> = {
-  Completed: 'bg-[#d1fae5] text-[#065f46]',
-  'In Progress': 'bg-[#fef3c7] text-[#92400e]',
-  Pending: 'bg-[#fee2e2] text-[#991b1b]',
+import StatusBadge from '@/components/shared/StatusBadge';
+
+const maintenanceStatusMap: Record<string, string> = {
+  Completed: 'available',
+  'In Progress': 'maintenance',
+  Pending: 'retired',
 };
 
 interface MaintenanceLog {
@@ -99,9 +101,7 @@ export default function MaintenanceTable() {
                 {/* Status */}
                 <td className="px-lg py-md">
                   <div className="flex justify-center">
-                    <span className={`text-label-sm px-md py-xs rounded-full font-bold ${statusStyles[log.status]}`}>
-                      {log.status}
-                    </span>
+                    <StatusBadge status={maintenanceStatusMap[log.status] ?? 'retired'} label={log.status} />
                   </div>
                 </td>
 

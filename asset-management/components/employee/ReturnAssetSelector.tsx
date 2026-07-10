@@ -51,7 +51,7 @@ export default function ReturnAssetSelector({ assets, selected, onToggle }: Prop
               </div>
 
               <div className="mt-auto pt-sm flex items-center justify-between">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-label-sm bg-[#d1fae5] text-[#065f46]">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-label-sm status-assigned">
                   Assigned
                 </span>
                 <span className="text-label-sm text-on-surface-variant">{asset.assignedDate}</span>

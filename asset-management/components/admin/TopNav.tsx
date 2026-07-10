@@ -1,8 +1,10 @@
+import ThemeToggle from '@/components/shared/ThemeToggle';
+
 export default function TopNav() {
   return (
     <header className="sticky top-0 z-40 flex justify-between items-center h-16 px-lg bg-surface-container-lowest border-b border-outline-variant shadow-sm">
-      {/* Search */}
-      <div className="flex items-center flex-1 max-w-2xl">
+      {/* Search — push left on mobile to make room for hamburger */}
+      <div className="flex items-center flex-1 max-w-2xl pl-10 lg:pl-0">
         <div className="relative w-full max-w-md">
           <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[20px]">
             search
@@ -18,6 +20,7 @@ export default function TopNav() {
       {/* Right Side */}
       <div className="flex items-center gap-lg">
         <div className="flex items-center gap-md">
+          <ThemeToggle />
           <button className="p-xs rounded-full hover:bg-surface-container transition-colors relative">
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
             <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />

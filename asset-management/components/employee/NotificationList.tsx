@@ -5,10 +5,6 @@ import { useState } from 'react';
 interface Notification {
   id: string;
   type: string;
-  typeBg: string;
-  typeText: string;
-  iconBg: string;
-  iconText: string;
   icon: string;
   title: string;
   time: string;
@@ -19,42 +15,44 @@ interface Notification {
 
 const initial: Notification[] = [
   {
-    id: '1', type: 'Assignment', typeBg: 'bg-[#dbe1ff]', typeText: 'text-[#00174b]',
-    iconBg: 'bg-primary-fixed', iconText: 'text-on-primary-fixed', icon: 'inventory_2',
+    id: '1', type: 'Assignment', icon: 'inventory_2',
     title: 'New asset assigned: LG Monitor', time: '2 mins ago',
     body: 'A new 27" LG UltraFine Monitor has been assigned to your workspace (ID: MON-2024-089). Please confirm receipt in the My Assets section.',
     unread: true,
     actions: [{ label: 'View Asset', primary: true }, { label: 'Dismiss' }],
   },
   {
-    id: '2', type: 'Request', typeBg: 'bg-[#d1fae5]', typeText: 'text-[#065f46]',
-    iconBg: 'bg-[#d1fae5]', iconText: 'text-[#065f46]', icon: 'task_alt',
+    id: '2', type: 'Request', icon: 'task_alt',
     title: 'Your request for iPhone 15 was approved', time: '1 hour ago',
     body: 'Good news! Your equipment request #RQ-9921 for an Apple iPhone 15 (128GB, Blue) has been approved by IT Management. It will be ready for pickup tomorrow at the central IT hub.',
     unread: true,
   },
   {
-    id: '3', type: 'Maintenance', typeBg: 'bg-[#ffdbcd]', typeText: 'text-[#7d2d00]',
-    iconBg: 'bg-[#ffdbcd]', iconText: 'text-[#7d2d00]', icon: 'build',
+    id: '3', type: 'Maintenance', icon: 'build',
     title: 'Maintenance completed for MacBook Pro #1042', time: 'Today, 9:15 AM',
     body: 'The scheduled battery service for your workstation has been successfully completed. All hardware diagnostics passed. No further action is required.',
     unread: false,
   },
   {
-    id: '4', type: 'System', typeBg: 'bg-surface-container-highest', typeText: 'text-on-surface-variant',
-    iconBg: 'bg-surface-container-highest', iconText: 'text-on-surface-variant', icon: 'info',
+    id: '4', type: 'System', icon: 'info',
     title: 'Portal maintenance scheduled for Sunday', time: 'Yesterday',
     body: 'The AssetPortal will be undergoing routine database maintenance this Sunday between 02:00 and 04:00 UTC. Expect intermittent downtime during this window.',
     unread: false,
   },
   {
-    id: '5', type: 'Request', typeBg: 'bg-[#d1fae5]', typeText: 'text-[#065f46]',
-    iconBg: 'bg-[#d1fae5]', iconText: 'text-[#065f46]', icon: 'assignment_return',
+    id: '5', type: 'Request', icon: 'assignment_return',
     title: 'Return processed: iPad Air #082', time: 'Oct 24, 2023',
     body: 'Your return request for iPad Air (Ref: #IP-082) has been fully processed and the asset has been removed from your inventory.',
     unread: false,
   },
 ];
+
+const typeStyles: Record<string, string> = {
+  Assignment: 'status-assigned',
+  Request: 'status-available',
+  Maintenance: 'status-maintenance',
+  System: 'status-retired',
+};
 
 export default function NotificationList() {
   const [notifications, setNotifications] = useState(initial);
@@ -127,50 +125,53 @@ export default function NotificationList() {
 
         {/* Items */}
         <div className="divide-y divide-outline-variant">
-          {visible.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => markRead(n.id)}
-              className={`flex gap-md p-lg cursor-pointer transition-colors hover:bg-surface-container-low ${n.unread ? 'bg-surface-container-low/30' : ''}`}
-            >
-              {/* Icon */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${n.iconBg} ${n.iconText}`}>
-                <span className="material-symbols-outlined">{n.icon}</span>
-              </div>
-
-              {/* Content */}
-              <div className={`flex-1 min-w-0 ${!n.unread ? 'opacity-80' : ''}`}>
-                <div className="flex justify-between items-start mb-xs">
-                  <span className={`px-sm py-0.5 rounded-full text-label-sm uppercase tracking-wider font-bold ${n.typeBg} ${n.typeText}`}>
-                    {n.type}
-                  </span>
-                  <span className="text-body-sm text-on-surface-variant whitespace-nowrap ml-md">{n.time}</span>
+          {visible.map((n) => {
+            const cls = typeStyles[n.type] ?? 'status-retired';
+            return (
+              <div
+                key={n.id}
+                onClick={() => markRead(n.id)}
+                className={`flex gap-md p-lg cursor-pointer transition-colors hover:bg-surface-container-low ${n.unread ? 'bg-surface-container-low/30' : ''}`}
+              >
+                {/* Icon */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${cls}`}>
+                  <span className="material-symbols-outlined">{n.icon}</span>
                 </div>
-                <h3 className="text-title-lg font-bold text-on-surface mb-xs flex items-center gap-sm">
-                  {n.title}
-                  {n.unread && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
-                </h3>
-                <p className="text-body-md text-on-surface-variant leading-relaxed mb-md">{n.body}</p>
-                {n.actions && (
-                  <div className="flex gap-sm">
-                    {n.actions.map((a) => (
-                      <button
-                        key={a.label}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`px-md py-sm text-label-md rounded font-medium hover:opacity-90 transition-opacity ${
-                          a.primary
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high'
-                        }`}
-                      >
-                        {a.label}
-                      </button>
-                    ))}
+
+                {/* Content */}
+                <div className={`flex-1 min-w-0 ${!n.unread ? 'opacity-80' : ''}`}>
+                  <div className="flex justify-between items-start mb-xs">
+                    <span className={`px-sm py-0.5 rounded-full text-label-sm uppercase tracking-wider font-bold ${cls}`}>
+                      {n.type}
+                    </span>
+                    <span className="text-body-sm text-on-surface-variant whitespace-nowrap ml-md">{n.time}</span>
                   </div>
-                )}
+                  <h3 className="text-title-lg font-bold text-on-surface mb-xs flex items-center gap-sm">
+                    {n.title}
+                    {n.unread && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
+                  </h3>
+                  <p className="text-body-md text-on-surface-variant leading-relaxed mb-md">{n.body}</p>
+                  {n.actions && (
+                    <div className="flex gap-sm">
+                      {n.actions.map((a) => (
+                        <button
+                          key={a.label}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-md py-sm text-label-md rounded font-medium hover:opacity-90 transition-opacity ${
+                            a.primary
+                              ? 'bg-primary text-on-primary'
+                              : 'bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-high'
+                          }`}
+                        >
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="p-md bg-surface-container-lowest text-center">

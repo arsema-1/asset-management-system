@@ -2,6 +2,275 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   STATUS COLOR THEMES
+   Each theme maps semantic status names to bg/text pairs.
+   Usage: class="status-available" etc.
+   ============================================================ */
+
+/* --- Default --- */
+:root,
+[data-theme="default"] {
+  --status-available-bg: #d1fae5;
+  --status-available-text: #065f46;
+  --status-assigned-bg: #dbeafe;
+  --status-assigned-text: #1e3a8a;
+  --status-maintenance-bg: #ffedd5;
+  --status-maintenance-text: #9a3412;
+  --status-retired-bg: #f3f4f6;
+  --status-retired-text: #374151;
+  --status-error-bg: #fee2e2;
+  --status-error-text: #991b1b;
+
+  --color-primary: #58C6D7;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #cff4f9;
+  --color-primary-fixed: #cff4f9;
+  --color-on-primary-fixed-variant: #005f6e;
+  --color-secondary: #505f76;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d0e1fb;
+  --color-on-secondary-container: #54647a;
+  --color-secondary-fixed: #d3e4fe;
+  --color-on-secondary-fixed: #0b1c30;
+  --color-tertiary: #943700;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #bc4800;
+  --color-tertiary-fixed: #ffdbcd;
+  --color-on-tertiary-fixed-variant: #7d2d00;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+}
+
+/* --- Dark --- */
+[data-theme="dark"] {
+  /* Status colors */
+  --status-available-bg: #064e3b;
+  --status-available-text: #6ee7b7;
+  --status-assigned-bg: #1e3a5f;
+  --status-assigned-text: #93c5fd;
+  --status-maintenance-bg: #431407;
+  --status-maintenance-text: #fdba74;
+  --status-retired-bg: #1f2937;
+  --status-retired-text: #9ca3af;
+  --status-error-bg: #4c0519;
+  --status-error-text: #fda4af;
+
+  color-scheme: dark;
+
+  /* Override every surface token the app uses */
+  --color-surface: #0f172a;
+  --color-background: #0f172a;
+  --color-on-surface: #e2e8f0;
+  --color-on-background: #e2e8f0;
+  --color-on-surface-variant: #94a3b8;
+  --color-surface-container-lowest: #1e293b;
+  --color-surface-container-low: #1e293b;
+  --color-surface-container: #334155;
+  --color-surface-container-high: #334155;
+  --color-surface-container-highest: #475569;
+  --color-outline-variant: #334155;
+  --color-outline: #475569;
+
+  --color-primary: #58C6D7;
+  --color-on-primary: #0f172a;
+  --color-primary-container: #004d57;
+  --color-primary-fixed: #004d57;
+  --color-on-primary-fixed-variant: #cff4f9;
+  --color-secondary: #94a3b8;
+  --color-on-secondary: #0f172a;
+  --color-secondary-container: #1e293b;
+  --color-on-secondary-container: #cbd5e1;
+  --color-secondary-fixed: #334155;
+  --color-on-secondary-fixed: #cbd5e1;
+  --color-tertiary: #ffb596;
+  --color-on-tertiary: #4c1d95;
+  --color-tertiary-container: #7c2d12;
+  --color-tertiary-fixed: #7c2d12;
+  --color-on-tertiary-fixed-variant: #ffdbcd;
+  --color-error: #fca5a5;
+  --color-on-error: #450a0a;
+  --color-error-container: #7f1d1d;
+  --color-on-error-container: #fca5a5;
+}
+
+/* Apply dark token overrides globally */
+[data-theme="dark"] body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Surfaces */
+[data-theme="dark"] .bg-surface,
+[data-theme="dark"] .bg-background          { background-color: #0f172a; }
+[data-theme="dark"] .bg-surface-container-lowest,
+[data-theme="dark"] .bg-white               { background-color: #1e293b; }
+[data-theme="dark"] .bg-surface-container-low { background-color: #1e293b; }
+[data-theme="dark"] .bg-surface-container   { background-color: #334155; }
+[data-theme="dark"] .bg-surface-container-high { background-color: #334155; }
+[data-theme="dark"] .bg-surface-container-highest { background-color: #475569; }
+
+/* Text */
+[data-theme="dark"] .text-on-surface        { color: #e2e8f0; }
+[data-theme="dark"] .text-on-surface-variant { color: #94a3b8; }
+[data-theme="dark"] .text-on-background     { color: #e2e8f0; }
+
+/* Borders */
+[data-theme="dark"] .border-outline-variant { border-color: #334155; }
+[data-theme="dark"] .border-outline         { border-color: #475569; }
+[data-theme="dark"] .divide-outline-variant > * + * { border-color: #334155; }
+
+/* Inputs and selects */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+/* Cards/panels that use bg-white inline */
+[data-theme="dark"] .hover\:bg-surface-container-low:hover { background-color: #334155; }
+[data-theme="dark"] .hover\:bg-surface-container-high:hover { background-color: #475569; }
+[data-theme="dark"] .hover\:bg-surface-container:hover { background-color: #334155; }
+[data-theme="dark"] .hover\:bg-background:hover { background-color: #1e293b; }
+
+/* Shadows — lighten them in dark mode */
+[data-theme="dark"] .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+
+/* --- Protanopia-friendly (no red/green) --- */
+[data-theme="protanopia"] {
+  --status-available-bg: #dbeafe;
+  --status-available-text: #1e3a8a;
+  --status-assigned-bg: #ede9fe;
+  --status-assigned-text: #4c1d95;
+  --status-maintenance-bg: #ffedd5;
+  --status-maintenance-text: #9a3412;
+  --status-retired-bg: #f3f4f6;
+  --status-retired-text: #374151;
+  --status-error-bg: #ffedd5;
+  --status-error-text: #9a3412;
+
+  --color-primary: #2563eb;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #dbeafe;
+  --color-primary-fixed: #dbeafe;
+  --color-on-primary-fixed-variant: #1e3a8a;
+  --color-secondary: #475569;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #f1f5f9;
+  --color-on-secondary-container: #334155;
+  --color-secondary-fixed: #e2e8f0;
+  --color-on-secondary-fixed: #1e293b;
+  --color-tertiary: #7c3aed;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #6b21a8;
+  --color-tertiary-fixed: #f3e8ff;
+  --color-on-tertiary-fixed-variant: #6b21a8;
+  --color-error: #ea580c;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffedd5;
+  --color-on-error-container: #9a3412;
+}
+
+/* --- Deuteranopia-friendly --- */
+[data-theme="deuteranopia"] {
+  --status-available-bg: #cffafe;
+  --status-available-text: #164e63;
+  --status-assigned-bg: #e0e7ff;
+  --status-assigned-text: #1e1b4b;
+  --status-maintenance-bg: #fef9c3;
+  --status-maintenance-text: #713f12;
+  --status-retired-bg: #1f2937;
+  --status-retired-text: #d1d5db;
+  --status-error-bg: #fef9c3;
+  --status-error-text: #713f12;
+
+  --color-primary: #0d9488;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #ccfbf1;
+  --color-primary-fixed: #ccfbf1;
+  --color-on-primary-fixed-variant: #115e59;
+  --color-secondary: #475569;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #f1f5f9;
+  --color-on-secondary-container: #334155;
+  --color-secondary-fixed: #e2e8f0;
+  --color-on-secondary-fixed: #1e293b;
+  --color-tertiary: #4f46e5;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #3730a3;
+  --color-tertiary-fixed: #e0e7ff;
+  --color-on-tertiary-fixed-variant: #3730a3;
+  --color-error: #ca8a04;
+  --color-on-error: #ffffff;
+  --color-error-container: #fef9c3;
+  --color-on-error-container: #713f12;
+}
+
+/* --- Tritanopia-friendly --- */
+[data-theme="tritanopia"] {
+  --status-available-bg: #d1fae5;
+  --status-available-text: #065f46;
+  --status-assigned-bg: #fee2e2;
+  --status-assigned-text: #991b1b;
+  --status-maintenance-bg: #fce7f3;
+  --status-maintenance-text: #9d174d;
+  --status-retired-bg: #f3f4f6;
+  --status-retired-text: #374151;
+  --status-error-bg: #fee2e2;
+  --status-error-text: #991b1b;
+
+  --color-primary: #16a34a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d1fae5;
+  --color-primary-fixed: #d1fae5;
+  --color-on-primary-fixed-variant: #166534;
+  --color-secondary: #475569;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #f1f5f9;
+  --color-on-secondary-container: #334155;
+  --color-secondary-fixed: #e2e8f0;
+  --color-on-secondary-fixed: #1e293b;
+  --color-tertiary: #db2777;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #9d174d;
+  --color-tertiary-fixed: #fce7f3;
+  --color-on-tertiary-fixed-variant: #9d174d;
+  --color-error: #dc2626;
+  --color-on-error: #ffffff;
+  --color-error-container: #fee2e2;
+  --color-on-error-container: #991b1b;
+}
+
+/* ============================================================
+   SEMANTIC STATUS CLASSES
+   ============================================================ */
+@layer components {
+  .status-available {
+    background-color: var(--status-available-bg);
+    color: var(--status-available-text);
+  }
+  .status-assigned {
+    background-color: var(--status-assigned-bg);
+    color: var(--status-assigned-text);
+  }
+  .status-maintenance {
+    background-color: var(--status-maintenance-bg);
+    color: var(--status-maintenance-text);
+  }
+  .status-retired {
+    background-color: var(--status-retired-bg);
+    color: var(--status-retired-text);
+  }
+  .status-error {
+    background-color: var(--status-error-bg);
+    color: var(--status-error-text);
+  }
+}
+
 :root {
   --ink: #141414;
   --muted: #696f7c;
@@ -10,7 +279,7 @@
   --aqua: #d8f6f8;
   --lavender: #d9d5fa;
   --mint: #ebfffb;
-  --blue: #2f6fec;
+  --blue: #58C6D7;
   --danger: #c93434;
   --success: #217a45;
 }

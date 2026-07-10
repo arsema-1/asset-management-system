@@ -1,7 +1,14 @@
-const statusStyles: Record<string, string> = {
-  ACTIVE: 'bg-[#d1fae5] text-[#065f46]',
-  OVERDUE: 'bg-[#fee2e2] text-[#991b1b]',
-  RETURNED: 'bg-[#f1f5f9] text-[#475569]',
+import StatusBadge from '@/components/shared/StatusBadge';
+
+const statusLabelMap: Record<string, string> = {
+  ACTIVE: 'Active',
+  OVERDUE: 'Overdue',
+  RETURNED: 'Returned',
+};
+const statusKeyMap: Record<string, string> = {
+  ACTIVE: 'assigned',
+  OVERDUE: 'maintenance',
+  RETURNED: 'retired',
 };
 
 interface Assignment {
@@ -70,9 +77,7 @@ export default function AssignmentTable() {
 
                 {/* Status */}
                 <td className="px-lg py-md">
-                  <span className={`px-sm py-xs rounded-full text-[11px] font-bold ${statusStyles[a.status]}`}>
-                    {a.status}
-                  </span>
+                  <StatusBadge status={statusKeyMap[a.status]} label={statusLabelMap[a.status]} />
                 </td>
 
                 {/* Actions */}

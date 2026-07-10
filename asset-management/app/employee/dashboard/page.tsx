@@ -1,7 +1,6 @@
 import EmployeeStatCards from '@/components/employee/EmployeeStatCards';
 import MyCurrentAssets from '@/components/employee/MyCurrentAssets';
 import ActivityFeed from '@/components/employee/ActivityFeed';
-import QuickActionsPanel from '@/components/employee/QuickActionsPanel';
 
 export default function EmployeeDashboard() {
   return (
@@ -20,17 +19,9 @@ export default function EmployeeDashboard() {
 
       <EmployeeStatCards />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
-        {/* Left — 8 cols */}
-        <div className="lg:col-span-8 space-y-lg">
-          <MyCurrentAssets />
-          <ActivityFeed />
-        </div>
-
-        {/* Right — 4 cols */}
-        <div className="lg:col-span-4">
-          <QuickActionsPanel />
-        </div>
+      <div className="grid grid-cols-1 gap-lg">
+        <MyCurrentAssets />
+        <ActivityFeed />
       </div>
     </div>
   );

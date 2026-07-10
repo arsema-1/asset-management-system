@@ -1,19 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-
-const statusStyles: Record<string, string> = {
-  Pending: 'bg-secondary-container text-on-secondary-container',
-  Approved: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
-  Completed: 'bg-primary-fixed text-on-primary-fixed-variant',
-  Rejected: 'bg-error-container text-on-error-container',
-};
-
-const statusDots: Record<string, string> = {
-  Pending: 'bg-secondary',
-  Approved: 'bg-tertiary',
-  Rejected: 'bg-error',
-};
+import StatusBadge from '@/components/shared/StatusBadge';
 
 interface Request {
   id: string;
@@ -84,13 +72,7 @@ export default function RequestsTable() {
 
                   {/* Status */}
                   <td className="px-lg py-lg">
-                    <span className={`px-md py-1 rounded-full text-label-sm font-bold inline-flex items-center gap-xs ${statusStyles[r.status]}`}>
-                      {statusDots[r.status]
-                        ? <span className={`w-1.5 h-1.5 rounded-full ${statusDots[r.status]}`} />
-                        : <span className="material-symbols-outlined text-[14px]">task_alt</span>
-                      }
-                      {r.status}
-                    </span>
+                    <StatusBadge status={r.status} />
                   </td>
 
                   {/* Admin Comment */}
@@ -148,9 +130,9 @@ export default function RequestsTable() {
                 </div>
                 <div>
                   <p className="text-label-sm font-bold text-on-surface-variant uppercase">Status</p>
-                  <span className={`px-md py-1 rounded-full text-label-sm font-bold inline-flex items-center mt-1 gap-xs ${statusStyles[selected.status]}`}>
-                    {selected.status}
-                  </span>
+                  <div className="mt-1">
+                    <StatusBadge status={selected.status} />
+                  </div>
                 </div>
               </div>
               <hr className="border-outline-variant" />
