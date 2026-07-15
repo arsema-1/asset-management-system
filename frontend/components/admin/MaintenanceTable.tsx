@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { maintenance as maintenanceApi, type MaintenanceLog } from '@/lib/api';
+import { formatDate, formatCost, getInitials } from '@/lib/utils';
 
 const maintenanceStatusMap: Record<string, string> = {
   completed: 'available',
@@ -12,17 +13,6 @@ const maintenanceStatusMap: Record<string, string> = {
 };
 
 const statusOptions = ['pending', 'in_progress', 'completed', 'cancelled'];
-
-function formatDate(d?: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatCost(n?: number | string) {
-  if (n == null || n === '') return '—';
-  const num = Number(n);
-  return isNaN(num) ? '—' : `$${num.toFixed(2)}`;
-}
 
 export default function MaintenanceTable() {
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
@@ -55,13 +45,12 @@ export default function MaintenanceTable() {
     setMenuOpen(null);
     try {
       const updated = await maintenanceApi.update(id, {
-        status: status as never,
+        status,
         ...(status === 'completed' ? { completed_date: new Date().toISOString().split('T')[0] } : {}),
-      });
-      // Merge the updated fields back into the log (keep joined asset/technician)
+      } as Partial<MaintenanceLog>);
       setLogs(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update status');
+      setError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setUpdating(null);
     }
@@ -102,9 +91,7 @@ export default function MaintenanceTable() {
                 <tr><td colSpan={7} className="px-lg py-lg text-on-surface-variant">No maintenance records.</td></tr>
               )}
               {logs.map((log) => {
-                const techInitials = log.technician
-                  ? `${log.technician.first_name[0]}${log.technician.last_name[0]}`.toUpperCase()
-                  : '??';
+                const techInitials = getInitials(log.technician?.first_name, log.technician?.last_name);
                 const techName = log.technician
                   ? `${log.technician.first_name} ${log.technician.last_name}`
                   : '—';

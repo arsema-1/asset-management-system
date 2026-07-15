@@ -5,7 +5,7 @@ import StatCard from '@/components/admin/StatCard';
 import RecentActivities from '@/components/admin/RecentActivities';
 import QuickActions from '@/components/admin/QuickActions';
 import AssetDistribution from '@/components/admin/AssetDistribution';
-import { getUser } from '@/lib/api';
+import { useUser } from '@/lib/hooks';
 
 interface ReportRow { status: string; count: string; }
 interface ReportData {
@@ -22,16 +22,13 @@ function countByStatus(rows: ReportRow[], status: string) {
 
 export default function AdminDashboard() {
   const [report, setReport] = useState<ReportData | null>(null);
-  const [user, setUser] = useState(getUser());
-
-  // Defer localStorage read to avoid hydration mismatch
-  useEffect(() => {
-    setUser(getUser());
-  }, []);
+  const user = useUser();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports`, {
-      headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : ''}` },
+    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : '';
+    fetch(`${base}/reports`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(j => setReport(j.data))
@@ -67,7 +64,7 @@ export default function AdminDashboard() {
             Welcome back, {user?.first_name ?? 'Admin'}
           </h2>
           <p className="text-body-md text-on-surface-variant">
-            Here is an overview of your organization's assets and activities for today.
+            Here is an overview of your organization&apos;s assets and activities for today.
           </p>
         </div>
         <div className="flex gap-md">

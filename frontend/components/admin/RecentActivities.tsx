@@ -2,29 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { activities } from '@/lib/api';
-
-interface Activity {
-  id: string;
-  action: string;
-  description: string;
-  created_at: string;
-  actor?: { first_name: string; last_name: string };
-  asset?: { name: string; asset_tag: string };
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function initials(actor?: { first_name: string; last_name: string }) {
-  if (!actor) return '??';
-  return `${actor.first_name[0]}${actor.last_name[0]}`.toUpperCase();
-}
+import { timeAgo, getInitials } from '@/lib/utils';
+import type { Activity } from '@/lib/types';
 
 const avatarColors = ['bg-primary-container text-on-primary-container', 'bg-secondary-container text-on-secondary-container', 'bg-error-container text-on-error-container', 'bg-surface-variant text-on-surface'];
 
@@ -64,7 +43,7 @@ export default function RecentActivities() {
                   <td className="px-md py-md">
                     <div className="flex items-center gap-sm">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-label-sm font-bold ${avatarColors[i % avatarColors.length]}`}>
-                        {initials(a.actor)}
+                        {getInitials(a.actor?.first_name, a.actor?.last_name)}
                       </div>
                       <p className="text-body-sm font-bold">
                         {a.actor ? `${a.actor.first_name} ${a.actor.last_name}` : 'System'}

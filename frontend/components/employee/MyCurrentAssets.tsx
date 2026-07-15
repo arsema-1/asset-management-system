@@ -38,7 +38,7 @@ export default function MyCurrentAssets() {
         {list.map((a) => {
           const icon = iconMap[a.asset?.category ?? 'other'] ?? 'devices';
           return (
-            <div key={a.id} className="bg-white border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+            <div key={a.id} className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-md transition-all duration-200">
               <div className="h-40 bg-surface-container flex items-center justify-center">
                 <span className="material-symbols-outlined text-[72px] text-outline-variant">{icon}</span>
               </div>

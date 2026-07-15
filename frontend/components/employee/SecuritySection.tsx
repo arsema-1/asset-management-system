@@ -24,7 +24,7 @@ export default function SecuritySection() {
               <input
                 type="password"
                 placeholder="••••••••••••"
-                className="w-full max-w-md bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full max-w-md bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-lg max-w-2xl">
@@ -37,7 +37,7 @@ export default function SecuritySection() {
                   <input
                     type="password"
                     placeholder={f.placeholder}
-                    className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
                 </div>
               ))}
@@ -73,7 +73,7 @@ export default function SecuritySection() {
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${twoFactor ? 'bg-primary' : 'bg-surface-container-highest'}`}
             >
               <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white border border-gray-200 shadow transition-transform ${twoFactor ? 'translate-x-5' : 'translate-x-0.5'}`}
+                className={`inline-block h-5 w-5 transform rounded-full bg-surface-container-lowest border border-gray-200 shadow transition-transform ${twoFactor ? 'translate-x-5' : 'translate-x-0.5'}`}
               />
             </button>
           </div>

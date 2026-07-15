@@ -28,3 +28,16 @@ export function notFound(res: Response, message = 'Not found'): Response {
 export function badRequest(res: Response, message = 'Bad request'): Response {
   return res.status(400).json({ success: false, message } satisfies ApiResponse);
 }
+
+export function forbidden(res: Response, message = 'Forbidden'): Response {
+  return res.status(403).json({ success: false, message } satisfies ApiResponse);
+}
+
+export function serverError(res: Response, err: unknown, context = 'Server error'): Response {
+  console.error(`[${context}]`, err);
+  return res.status(500).json({ success: false, message: 'Server error' } satisfies ApiResponse);
+}
+
+export function conflict(res: Response, message = 'Conflict'): Response {
+  return res.status(409).json({ success: false, message } satisfies ApiResponse);
+}

@@ -28,7 +28,7 @@ export default function ReturnAssetSelector({ assets, selected, onToggle }: Prop
             <div
               key={asset.id}
               onClick={() => onToggle(asset.id)}
-              className={`cursor-pointer relative p-md bg-white border rounded-xl shadow-sm transition-all flex flex-col gap-sm ${
+              className={`cursor-pointer relative p-md bg-surface-container-lowest border rounded-xl shadow-sm transition-all flex flex-col gap-sm ${
                 isSelected
                   ? 'border-primary bg-surface-container-low ring-1 ring-primary'
                   : 'border-outline-variant hover:border-primary'

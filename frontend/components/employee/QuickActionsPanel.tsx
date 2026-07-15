@@ -22,7 +22,7 @@ export default function QuickActionsPanel() {
         <div className="grid grid-cols-1 gap-sm">
           {actions.map((a) => (
             <button key={a.label} onClick={() => router.push(a.href)}
-              className="flex items-center gap-md p-md bg-white border border-outline-variant rounded-xl hover:bg-primary hover:text-on-primary transition-all group text-left">
+              className="flex items-center gap-md p-md bg-surface-container-lowest border border-outline-variant rounded-xl hover:bg-primary hover:text-on-primary transition-all group text-left">
               <span className="material-symbols-outlined bg-surface-container-high group-hover:bg-primary-container p-sm rounded-lg">{a.icon}</span>
               <div className="flex flex-col">
                 <span className="font-bold text-body-md">{a.label}</span>

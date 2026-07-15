@@ -2,32 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { activities } from '@/lib/api';
-
-interface Activity {
-  id: string;
-  action: string;
-  description: string;
-  created_at: string;
-  asset?: { name: string };
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return 'Yesterday';
-  return `${days} days ago`;
-}
-
-const iconMap: Record<string, { icon: string; bg: string; cls: string }> = {
-  asset_assigned:   { icon: 'assignment_ind',    bg: 'bg-primary-fixed',   cls: 'text-primary' },
-  asset_returned:   { icon: 'assignment_return', bg: 'bg-secondary-fixed', cls: 'text-secondary' },
-  maintenance:      { icon: 'build',             bg: 'bg-tertiary-fixed',  cls: 'text-tertiary' },
-  request_approved: { icon: 'verified',          bg: 'bg-secondary-fixed', cls: 'text-secondary' },
-};
+import { timeAgo } from '@/lib/utils';
+import { activityStyleMap, type Activity } from '@/lib/types';
 
 export default function RecentActivityPanel() {
   const [logs, setLogs] = useState<Activity[]>([]);
@@ -50,7 +26,7 @@ export default function RecentActivityPanel() {
       <h3 className="text-title-lg font-bold mb-md">Recent Activity</h3>
       <div className="space-y-lg">
         {logs.map((a) => {
-          const style = iconMap[a.action] ?? { icon: 'update', bg: 'bg-tertiary-fixed', cls: 'text-tertiary' };
+          const style = activityStyleMap[a.action] ?? { icon: 'update', bg: 'bg-tertiary-fixed', cls: 'text-tertiary' };
           return (
             <div key={a.id} className="flex gap-md">
               <div className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>

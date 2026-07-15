@@ -20,7 +20,7 @@ export default function MyAssetCard({
   conditionClass, status, statusClass, statusDotClass, pendingReturn, onReportIssue,
 }: AssetCardProps) {
   return (
-    <div className="group bg-white border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div className="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
       {/* Image placeholder */}
       <div className="h-48 relative bg-surface-container flex items-center justify-center">
         <span className="material-symbols-outlined text-[80px] text-outline-variant">{icon}</span>

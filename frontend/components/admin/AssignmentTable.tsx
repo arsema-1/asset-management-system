@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { assignments as assignmentsApi, type Assignment } from '@/lib/api';
+import { formatDate, getInitials } from '@/lib/utils';
 
 const statusLabelMap: Record<string, string> = { active: 'Active', overdue: 'Overdue', returned: 'Returned' };
 const statusKeyMap: Record<string, string> = { active: 'assigned', overdue: 'maintenance', returned: 'retired' };
 const statusOptions = ['active', 'overdue', 'returned'];
-
-function formatDate(d?: string) {
-  if (!d) return 'N/A';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
 
 interface Props {
   statusFilter?: string;
@@ -45,12 +41,12 @@ export default function AssignmentTable({ statusFilter = '' }: Props) {
     setMenuOpen(null);
     try {
       const updated = await assignmentsApi.update(id, {
-        status: status as never,
+        status,
         ...(status === 'returned' ? { actual_return_date: new Date().toISOString().split('T')[0] } : {}),
-      });
+      } as Partial<Assignment>);
       setList(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update');
+      setError(err instanceof Error ? err.message : 'Failed to update');
     } finally {
       setUpdating(null);
     }
@@ -80,9 +76,7 @@ export default function AssignmentTable({ statusFilter = '' }: Props) {
                 </td></tr>
               )}
               {filtered.map((a) => {
-                const userInitials = a.user
-                  ? `${a.user.first_name[0]}${a.user.last_name[0]}`.toUpperCase()
-                  : '??';
+                const userInitials = getInitials(a.user?.first_name, a.user?.last_name);
                 const isUpdating = updating === a.id;
 
                 return (

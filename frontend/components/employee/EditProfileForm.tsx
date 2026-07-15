@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { getUser, employees as employeesApi, setUser } from '@/lib/api';
+import { useUser } from '@/lib/hooks';
 
 export default function EditProfileForm() {
-  const [user, setUserState] = useState(getUser());
+  const user = useUser();
+  const [localUser, setLocalUser] = useState(getUser());
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -17,10 +19,9 @@ export default function EditProfileForm() {
     position: '',
   });
 
-  // Defer localStorage read to avoid hydration mismatch
   useEffect(() => {
     const u = getUser();
-    setUserState(u);
+    setLocalUser(u);
     if (u) {
       setFormData({
         first_name: u.first_name ?? '',
@@ -37,18 +38,16 @@ export default function EditProfileForm() {
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!localUser) return;
     setSaving(true);
     setError('');
     try {
-      const updated = await employeesApi.update(user.id, formData);
-      // Update localStorage with form data + response (response only returns basic fields)
+      const updated = await employeesApi.update(localUser.id, formData);
       const currentUser = getUser();
       if (currentUser) {
         setUser({ ...currentUser, ...formData, ...updated });
       }
-      // Also update local state
-      setUserState({ ...user, ...updated });
+      setLocalUser({ ...localUser, ...updated });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err: unknown) {
@@ -58,13 +57,15 @@ export default function EditProfileForm() {
     }
   };
 
-  if (!user) {
+  if (!localUser) {
     return (
       <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <div className="p-lg text-on-surface-variant">Loading profile...</div>
       </div>
     );
   }
+
+  const inputClass = 'w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all';
 
   return (
     <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
@@ -96,86 +97,36 @@ export default function EditProfileForm() {
       <div className="p-lg grid grid-cols-1 md:grid-cols-2 gap-lg">
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">First Name</label>
-          <input
-            type="text"
-            value={formData.first_name}
-            onChange={e => handleChange('first_name', e.target.value)}
-            className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+          <input type="text" value={formData.first_name} onChange={e => handleChange('first_name', e.target.value)} className={inputClass} />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Last Name</label>
-          <input
-            type="text"
-            value={formData.last_name}
-            onChange={e => handleChange('last_name', e.target.value)}
-            className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+          <input type="text" value={formData.last_name} onChange={e => handleChange('last_name', e.target.value)} className={inputClass} />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Email</label>
-          <input
-            type="email"
-            value={user.email ?? ''}
-            disabled
-            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed"
-          />
+          <input type="email" value={localUser.email ?? ''} disabled className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed" />
           <p className="text-[11px] text-on-surface-variant">Email cannot be changed</p>
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Employee ID</label>
-          <input
-            type="text"
-            value={user.employee_id ?? '—'}
-            disabled
-            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed"
-          />
+          <input type="text" value={localUser.employee_id ?? '—'} disabled className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed" />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Phone Number</label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={e => handleChange('phone', e.target.value)}
-            placeholder="+1 (555) 000-0000"
-            className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+          <input type="tel" value={formData.phone} onChange={e => handleChange('phone', e.target.value)} placeholder="+1 (555) 000-0000" className={inputClass} />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Position / Job Title</label>
-          <input
-            type="text"
-            value={formData.position}
-            onChange={e => handleChange('position', e.target.value)}
-            placeholder="e.g. Software Engineer"
-            className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+          <input type="text" value={formData.position} onChange={e => handleChange('position', e.target.value)} placeholder="e.g. Software Engineer" className={inputClass} />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Department</label>
-          <input
-            type="text"
-            value={user.department ?? '—'}
-            disabled
-            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed"
-          />
+          <input type="text" value={localUser.department ?? '—'} disabled className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface-variant cursor-not-allowed" />
         </div>
-
         <div className="space-y-sm">
           <label className="text-label-md text-on-surface-variant">Work Location</label>
-          <input
-            type="text"
-            value={formData.work_location}
-            onChange={e => handleChange('work_location', e.target.value)}
-            placeholder="e.g. HQ - Floor 4"
-            className="w-full bg-white border border-outline-variant rounded-lg px-md py-sm text-body-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+          <input type="text" value={formData.work_location} onChange={e => handleChange('work_location', e.target.value)} placeholder="e.g. HQ - Floor 4" className={inputClass} />
         </div>
       </div>
 

@@ -1,76 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useNotifications } from '@/lib/hooks';
+import { timeAgo } from '@/lib/utils';
+import { notificationTypeStyles, notificationTypeIcons, type Notification } from '@/lib/types';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 2) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-const typeStyles: Record<string, string> = {
-  assignment: 'status-assigned', request: 'status-available',
-  maintenance: 'status-maintenance', system: 'status-retired', return: 'status-maintenance',
-};
-const typeIcons: Record<string, string> = {
-  assignment: 'inventory_2', request: 'task_alt',
-  maintenance: 'build', system: 'info', return: 'assignment_return',
-};
-
-function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
-}
-function getToken() {
-  return typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : '';
-}
+type TabKey = 'all' | 'unread';
 
 export default function NotificationList() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
-  const [loading, setLoading] = useState(true);
+  const { notifications, unreadCount, fetchNotifications, markRead, markAllRead } = useNotifications();
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [loading, setLoading] = useState(false);
 
-  const fetchNotifications = () => {
-    fetch(`${getApiBase()}/users/me/notifications`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    })
-      .then(r => r.json())
-      .then(j => setNotifications(Array.isArray(j.data) ? j.data : []))
-      .catch(() => setNotifications([]))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(fetchNotifications, []);
-
-  const markRead = (id: string) => {
-    fetch(`${getApiBase()}/users/me/notifications/${id}/read`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${getToken()}` },
-    }).catch(() => {});
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-  };
-
-  const markAllRead = () => {
-    fetch(`${getApiBase()}/users/me/notifications/read-all`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${getToken()}` },
-    }).catch(() => {});
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-  };
-
-  const unreadCount = notifications.filter(n => !n.is_read).length;
   const visible = activeTab === 'unread' ? notifications.filter(n => !n.is_read) : notifications;
 
   const tabs = [
@@ -94,7 +35,7 @@ export default function NotificationList() {
             <span className="material-symbols-outlined text-[20px]">done_all</span>
             Mark all as read
           </button>
-          <button onClick={fetchNotifications} className="flex items-center gap-sm px-md py-sm bg-primary text-on-primary text-label-md rounded-lg hover:opacity-90">
+          <button onClick={() => { setLoading(true); fetchNotifications(); setLoading(false); }} className="flex items-center gap-sm px-md py-sm bg-primary text-on-primary text-label-md rounded-lg hover:opacity-90">
             <span className="material-symbols-outlined text-[20px]">refresh</span>
             Refresh
           </button>
@@ -120,8 +61,8 @@ export default function NotificationList() {
             </div>
           )}
           {visible.map(n => {
-            const cls = typeStyles[n.type] ?? 'status-retired';
-            const icon = typeIcons[n.type] ?? 'notifications';
+            const cls = notificationTypeStyles[n.type] ?? 'status-retired';
+            const icon = notificationTypeIcons[n.type] ?? 'notifications';
             return (
               <div key={n.id} onClick={() => markRead(n.id)}
                 className={`flex gap-md p-lg cursor-pointer transition-colors hover:bg-surface-container-low ${!n.is_read ? 'bg-primary/5' : ''}`}>
@@ -151,7 +92,7 @@ export default function NotificationList() {
           <span className="material-symbols-outlined text-primary">notifications_active</span>
           <div>
             <h4 className="text-title-lg font-bold mb-xs">Real-time Alerts</h4>
-            <p className="text-body-sm opacity-90">You'll be notified immediately when admin approves or rejects your asset requests. Check this page regularly for updates.</p>
+            <p className="text-body-sm opacity-90">You&apos;ll be notified immediately when admin approves or rejects your asset requests. Check this page regularly for updates.</p>
           </div>
         </div>
         <div className="p-lg rounded-xl bg-tertiary-container text-on-tertiary-container flex items-start gap-md border border-outline-variant">

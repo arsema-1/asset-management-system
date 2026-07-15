@@ -16,9 +16,11 @@ export default function ReturnForm() {
     }, 1500);
   };
 
+  const inputClass = 'w-full p-md border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all text-body-md bg-surface-container-low';
+
   return (
     <div className="lg:col-span-5">
-      <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden sticky top-24">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden sticky top-24">
         <div className="p-md bg-surface-container-low border-b border-outline-variant">
           <h2 className="text-title-lg font-bold text-on-surface">Return Details</h2>
           <p className="text-body-sm text-on-surface-variant">Complete this form to finalize your request.</p>
@@ -28,16 +30,13 @@ export default function ReturnForm() {
           {/* Return Date */}
           <div className="space-y-sm">
             <label className="block text-label-md text-on-surface-variant">Return Date</label>
-            <input
-              type="date"
-              className="w-full p-md border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all text-body-md"
-            />
+            <input type="date" className={inputClass} />
           </div>
 
           {/* Condition */}
           <div className="space-y-sm">
             <label className="block text-label-md text-on-surface-variant">Current Condition</label>
-            <select className="w-full p-md border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white transition-all text-body-md appearance-none">
+            <select className={`${inputClass} appearance-none`}>
               <option value="" disabled selected>Select condition</option>
               <option value="excellent">Excellent</option>
               <option value="good">Good</option>
@@ -49,11 +48,7 @@ export default function ReturnForm() {
           {/* Notes */}
           <div className="space-y-sm">
             <label className="block text-label-md text-on-surface-variant">Return Notes</label>
-            <textarea
-              rows={4}
-              placeholder="Mention any damages, missing accessories, or technical issues..."
-              className="w-full p-md border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all text-body-md resize-none"
-            />
+            <textarea rows={4} placeholder="Mention any damages, missing accessories, or technical issues..." className={`${inputClass} resize-none`} />
           </div>
 
           {/* Compliance Notice */}

@@ -1,17 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUser, assignments as assignmentsApi, assetRequests, type Assignment, type AssetRequest } from '@/lib/api';
+import { assignments as assignmentsApi, assetRequests, type Assignment, type AssetRequest } from '@/lib/api';
+import { useUser } from '@/lib/hooks';
+import { getInitials } from '@/lib/utils';
 
 export default function ProfileSummaryCard() {
-  const [user, setUser] = useState(getUser());
+  const user = useUser();
   const [activeAssets, setActiveAssets] = useState(0);
   const [pendingReqs, setPendingReqs] = useState(0);
-
-  // Defer localStorage read to avoid hydration mismatch
-  useEffect(() => {
-    setUser(getUser());
-  }, []);
 
   useEffect(() => {
     Promise.all([assignmentsApi.list(), assetRequests.list()])
@@ -21,7 +18,7 @@ export default function ProfileSummaryCard() {
       }).catch(() => {});
   }, []);
 
-  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'AU';
+  const initials = getInitials(user?.first_name, user?.last_name);
 
   const stats = [
     { icon: 'laptop_mac', value: String(activeAssets), label: 'Active Assets', valueClass: 'text-primary', iconClass: 'text-primary' },

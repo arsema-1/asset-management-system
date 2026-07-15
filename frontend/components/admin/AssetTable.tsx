@@ -5,6 +5,7 @@ import Link from 'next/link';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { assets as assetsApi, type Asset } from '@/lib/api';
 
+
 const categoryIcons: Record<string, string> = {
   laptop: 'laptop_mac', monitor: 'monitor', mobile: 'smartphone',
   peripheral: 'keyboard', infrastructure: 'dns', furniture: 'desk', other: 'devices',
@@ -60,10 +61,10 @@ export default function AssetTable({ search = '', category = '', status = '' }: 
     setUpdating(id);
     setMenuOpen(null);
     try {
-      const updated = await assetsApi.update(id, { status: newStatus as never });
+      const updated = await assetsApi.update(id, { status: newStatus } as Partial<Asset>);
       setAll(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update status');
+      setError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setUpdating(null);
     }
@@ -71,16 +72,15 @@ export default function AssetTable({ search = '', category = '', status = '' }: 
 
   const handleDelete = async (id: string, name: string, assetStatus: string) => {
     if (assetStatus === 'assigned') {
-      alert('Cannot delete an assigned asset. Please return it first.');
+      setError('Cannot delete an assigned asset. Please return it first.');
       return;
     }
-    if (!confirm(`Permanently delete "${name}"?\n\nThis action cannot be undone and will remove all associated history.`)) return;
+    if (!window.confirm(`Permanently delete "${name}"?\n\nThis action cannot be undone and will remove all associated history.`)) return;
     try {
       await assetsApi.delete(id);
       setAll(prev => prev.filter(a => a.id !== id));
-      alert(`Asset "${name}" has been successfully deleted.`);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete asset');
+      setError(err instanceof Error ? err.message : 'Failed to delete asset');
     }
   };
 

@@ -1,32 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { activities } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-
-interface Activity {
-  id: string;
-  action: string;
-  description: string;
-  created_at: string;
-  asset?: { name: string };
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return days === 1 ? 'Yesterday' : `${days} days ago`;
-}
-
-const styleMap: Record<string, { icon: string; bg: string; cls: string }> = {
-  asset_assigned:   { icon: 'assignment_ind',    bg: 'bg-primary-container',       cls: 'text-on-primary-container' },
-  asset_returned:   { icon: 'history',           bg: 'bg-surface-container-high',  cls: 'text-on-surface-variant' },
-  request_approved: { icon: 'check_circle',      bg: 'bg-secondary-container',     cls: 'text-on-secondary-container' },
-};
+import { activities } from '@/lib/api';
+import { timeAgo } from '@/lib/utils';
+import { activityStyleMap, type Activity } from '@/lib/types';
 
 export default function ActivityFeed() {
   const router = useRouter();
@@ -47,7 +25,7 @@ export default function ActivityFeed() {
             <p className="p-lg text-body-sm text-on-surface-variant">No recent activity.</p>
           )}
           {logs.map((a) => {
-            const s = styleMap[a.action] ?? { icon: 'update', bg: 'bg-surface-container-high', cls: 'text-on-surface-variant' };
+            const s = activityStyleMap[a.action] ?? { icon: 'update', bg: 'bg-surface-container-high', cls: 'text-on-surface-variant' };
             return (
               <div key={a.id} className="p-md flex items-start gap-md hover:bg-surface-container-low transition-colors">
                 <div className={`w-10 h-10 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
