@@ -1,0 +1,8 @@
+{
+  "/employee/returns/page": "app/employee/returns/page.js",
+  "/admin/assets/page": "app/admin/assets/page.js",
+  "/employee/requests/page": "app/employee/requests/page.js",
+  "/employee/dashboard/page": "app/employee/dashboard/page.js",
+  "/admin/assignments/page": "app/admin/assignments/page.js",
+  "/employee/assets/page": "app/employee/assets/page.js"
+}
