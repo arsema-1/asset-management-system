@@ -1,3 +1,9 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import StatusBadge from '@/components/shared/StatusBadge';
+import { employees as employeesApi, type User } from '@/lib/api';
+
 const departmentStyles: Record<string, string> = {
   Engineering: 'bg-[#d0e1fb] text-[#0b1c30]',
   HR: 'bg-[#ffdbcd] text-[#360f00]',
@@ -6,132 +12,80 @@ const departmentStyles: Record<string, string> = {
   Marketing: 'bg-[#ede9fe] text-[#4c1d95]',
 };
 
-import StatusBadge from '@/components/shared/StatusBadge';
-
-const employeeStatusMap: Record<string, string> = {
-  Active: 'available',
-  'On Leave': 'maintenance',
-  Inactive: 'retired',
-};
-
-
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  department: string;
-  position: string;
-  activeAssets: number;
-  status: 'Active' | 'On Leave' | 'Inactive';
-  initials: string;
+function initials(user: User) {
+  return `${user.first_name[0] ?? ''}${user.last_name[0] ?? ''}`.toUpperCase();
 }
 
-const employees: Employee[] = [
-  { id: 'EMP-8821', name: 'Jordan Henderson', email: 'j.henderson@assetpro.io', department: 'Engineering', position: 'Senior DevOps', activeAssets: 4, status: 'Active', initials: 'JH' },
-  { id: 'EMP-4456', name: 'Elena Rodriguez', email: 'e.rodriguez@assetpro.io', department: 'HR', position: 'Talent Acquisition', activeAssets: 2, status: 'Active', initials: 'ER' },
-  { id: 'EMP-1290', name: 'Marcus Thorne', email: 'm.thorne@assetpro.io', department: 'Sales', position: 'Account Director', activeAssets: 3, status: 'On Leave', initials: 'MT' },
-  { id: 'EMP-9902', name: 'Sarah Jenkins', email: 's.jenkins@assetpro.io', department: 'Engineering', position: 'Lead Frontend', activeAssets: 5, status: 'Active', initials: 'SJ' },
-];
-
 export default function EmployeeTable() {
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    employeesApi.list()
+      .then(setEmployees)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-[#f1f5f9]">
-            <tr>
-              {['Employee Name', 'Email', 'Department', 'Position', 'Active Assets', 'Status', 'Actions'].map((h, i) => (
-                <th
-                  key={h}
-                  className={`px-lg py-3 text-label-sm text-on-surface-variant uppercase ${i === 4 ? 'text-center' : i === 6 ? 'text-right' : ''}`}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant">
-            {employees.map((emp) => (
-              <tr key={emp.id} className="hover:bg-surface transition-colors">
-                {/* Name */}
-                <td className="px-lg py-4">
-                  <div className="flex items-center gap-md">
-                    <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold flex-shrink-0">
-                      {emp.initials}
-                    </div>
-                    <div>
-                      <p className="text-body-sm font-semibold text-on-surface">{emp.name}</p>
-                      <p className="text-[11px] text-on-surface-variant">ID: {emp.id}</p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Email */}
-                <td className="px-lg py-4 text-body-sm text-on-surface-variant">{emp.email}</td>
-
-                {/* Department */}
-                <td className="px-lg py-4">
-                  <span className={`px-2 py-1 rounded text-label-sm font-bold ${departmentStyles[emp.department] ?? 'bg-surface-container text-on-surface'}`}>
-                    {emp.department}
-                  </span>
-                </td>
-
-                {/* Position */}
-                <td className="px-lg py-4 text-body-sm text-on-surface-variant">{emp.position}</td>
-
-                {/* Active Assets */}
-                <td className="px-lg py-4 text-center">
-                  <span className="text-body-sm font-medium text-primary">{emp.activeAssets}</span>
-                </td>
-
-                {/* Status */}
-                <td className="px-lg py-4">
-                  <StatusBadge status={employeeStatusMap[emp.status] ?? 'retired'} label={emp.status} dot />
-                </td>
-
-                {/* Actions */}
-                <td className="px-lg py-4 text-right">
-                  <button className="p-1 hover:bg-surface-container rounded-md text-on-surface-variant transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                  </button>
-                </td>
+        {loading && <p className="p-lg text-on-surface-variant">Loading...</p>}
+        {error && <p className="p-lg text-error">{error}</p>}
+        {!loading && !error && (
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-[#f1f5f9]">
+              <tr>
+                {['Employee Name', 'Email', 'Department', 'Position', 'Status', 'Actions'].map((h, i) => (
+                  <th key={h} className={`px-lg py-3 text-label-sm text-on-surface-variant uppercase ${i === 5 ? 'text-right' : ''}`}>
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {employees.length === 0 && (
+                <tr><td colSpan={6} className="px-lg py-lg text-on-surface-variant">No employees found.</td></tr>
+              )}
+              {employees.map((emp) => (
+                <tr key={emp.id} className="hover:bg-surface transition-colors">
+                  <td className="px-lg py-4">
+                    <div className="flex items-center gap-md">
+                      <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold flex-shrink-0">
+                        {initials(emp)}
+                      </div>
+                      <div>
+                        <p className="text-body-sm font-semibold text-on-surface">{emp.first_name} {emp.last_name}</p>
+                        <p className="text-[11px] text-on-surface-variant">ID: {emp.employee_id ?? '—'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-lg py-4 text-body-sm text-on-surface-variant">{emp.email}</td>
+                  <td className="px-lg py-4">
+                    <span className={`px-2 py-1 rounded text-label-sm font-bold ${departmentStyles[emp.department ?? ''] ?? 'bg-surface-container text-on-surface'}`}>
+                      {emp.department ?? '—'}
+                    </span>
+                  </td>
+                  <td className="px-lg py-4 text-body-sm text-on-surface-variant">{emp.position ?? '—'}</td>
+                  <td className="px-lg py-4">
+                    <StatusBadge status={emp.status === 'active' ? 'available' : 'retired'} label={emp.status ?? 'inactive'} dot />
+                  </td>
+                  <td className="px-lg py-4 text-right">
+                    <button className="p-1 hover:bg-surface-container rounded-md text-on-surface-variant transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {/* Pagination */}
       <div className="px-lg py-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-lowest">
         <p className="text-body-sm text-on-surface-variant">
-          Showing <span className="font-semibold text-on-surface">1</span> to{' '}
-          <span className="font-semibold text-on-surface">4</span> of{' '}
-          <span className="font-semibold text-on-surface">42</span> employees
+          Showing <span className="font-semibold text-on-surface">{employees.length}</span> employees
         </p>
-        <div className="flex items-center gap-2">
-          <button disabled className="p-2 border border-outline-variant rounded-lg text-on-surface-variant disabled:opacity-40">
-            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-          </button>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3].map((p) => (
-              <button
-                key={p}
-                className={`w-9 h-9 flex items-center justify-center rounded-lg text-body-sm font-medium ${
-                  p === 1 ? 'bg-primary text-on-primary' : 'hover:bg-surface-container text-on-surface-variant'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <span className="px-2 text-outline">...</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-surface-container text-on-surface-variant text-body-sm font-medium">
-              11
-            </button>
-          </div>
-          <button className="p-2 border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low">
-            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
 import Image from 'next/image';
+import { auth, setToken, setUser } from '@/lib/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,20 +19,16 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    await new Promise((r) => setTimeout(r, 1200));
-
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-    if (email === adminEmail && password === adminPassword) {
-      router.push('/admin/dashboard');
-    } else if (password.length >= 6) {
-      router.push('/employee/dashboard');
-    } else {
-      setError('Invalid email or password.');
+    try {
+      const { token, user } = await auth.login(email, password);
+      setToken(token);
+      setUser(user);
+      router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { auth, setToken, setUser } from '@/lib/api';
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +14,10 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
+    const full_name = (form.elements.namedItem('full_name') as HTMLInputElement).value.trim();
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+    const employee_id = (form.elements.namedItem('employee_id') as HTMLInputElement).value.trim();
+    const department = (form.elements.namedItem('department') as HTMLSelectElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
 
     if (password.length < 8) {
@@ -20,10 +25,21 @@ export default function SignupPage() {
       return;
     }
 
+    const [first_name, ...rest] = full_name.split(' ');
+    const last_name = rest.join(' ') || '-';
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    router.push('/login');
+    setError('');
+    try {
+      const { token, user } = await auth.signup({ first_name, last_name, email, password, employee_id, department });
+      setToken(token);
+      setUser(user);
+      router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

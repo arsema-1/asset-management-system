@@ -1,20 +1,54 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import StatCard from '@/components/admin/StatCard';
 import RecentActivities from '@/components/admin/RecentActivities';
 import QuickActions from '@/components/admin/QuickActions';
 import AssetDistribution from '@/components/admin/AssetDistribution';
+import { getUser } from '@/lib/api';
 
-const stats = [
-  { label: 'Total Assets', value: '1,240', note: '+12% vs last month', icon: 'inventory', iconColor: 'text-primary', trend: 'trending_up', trendColor: 'text-primary' },
-  { label: 'Assigned', value: '980', note: '79% utilization rate', icon: 'person_check', iconColor: 'text-[#0ea5e9]' },
-  { label: 'Available', value: '210', note: 'Ready for deployment', icon: 'check_circle', iconColor: 'text-[#22c55e]' },
-  { label: 'Pending', value: '15', note: '5 high priority', icon: 'pending_actions', iconColor: 'text-[#f59e0b]', trendColor: 'text-error' },
-  { label: 'Maintenance', value: '35', note: 'Avg 2.4 days repair', icon: 'handyman', iconColor: 'text-error' },
-];
+interface ReportRow { status: string; count: string; }
+interface ReportData {
+  assets: ReportRow[];
+  assignments: ReportRow[];
+  requests: ReportRow[];
+  maintenance: ReportRow[];
+  active_employees: number;
+}
+
+function countByStatus(rows: ReportRow[], status: string) {
+  return parseInt(rows.find(r => r.status === status)?.count ?? '0', 10);
+}
 
 export default function AdminDashboard() {
+  const [report, setReport] = useState<ReportData | null>(null);
+  const user = getUser();
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports`, {
+      headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : ''}` },
+    })
+      .then(r => r.json())
+      .then(j => setReport(j.data))
+      .catch(() => {});
+  }, []);
+
+  const totalAssets = report ? report.assets.reduce((s, r) => s + parseInt(r.count, 10), 0) : 0;
+  const assigned = report ? countByStatus(report.assets, 'assigned') : 0;
+  const available = report ? countByStatus(report.assets, 'available') : 0;
+  const pending = report ? countByStatus(report.requests, 'pending') : 0;
+  const inRepair = report ? countByStatus(report.assets, 'in_repair') : 0;
+
+  const stats = [
+    { label: 'Total Assets', value: totalAssets.toLocaleString(), note: 'All registered assets', icon: 'inventory', iconColor: 'text-primary', trend: 'trending_up', trendColor: 'text-primary' },
+    { label: 'Assigned', value: assigned.toLocaleString(), note: `${totalAssets ? Math.round((assigned / totalAssets) * 100) : 0}% utilization rate`, icon: 'person_check', iconColor: 'text-[#0ea5e9]' },
+    { label: 'Available', value: available.toLocaleString(), note: 'Ready for deployment', icon: 'check_circle', iconColor: 'text-[#22c55e]' },
+    { label: 'Pending', value: pending.toLocaleString(), note: 'Requests awaiting review', icon: 'pending_actions', iconColor: 'text-[#f59e0b]', trendColor: 'text-error' },
+    { label: 'Maintenance', value: inRepair.toLocaleString(), note: 'Assets in repair', icon: 'handyman', iconColor: 'text-error' },
+  ];
+
   return (
     <>
-      {/* Welcome Section */}
       <section className="flex flex-col md:flex-row justify-between items-end md:items-center gap-md">
         <div>
           <nav className="flex items-center gap-xs text-body-sm text-on-surface-variant mb-xs">
@@ -22,7 +56,9 @@ export default function AdminDashboard() {
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             <span className="text-primary font-medium">Dashboard</span>
           </nav>
-          <h2 className="text-headline-lg font-bold text-on-surface">Welcome back, Admin</h2>
+          <h2 className="text-headline-lg font-bold text-on-surface">
+            Welcome back, {user?.first_name ?? 'Admin'}
+          </h2>
           <p className="text-body-md text-on-surface-variant">
             Here is an overview of your organization's assets and activities for today.
           </p>
@@ -39,14 +75,12 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Stats Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-md">
         {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </section>
 
-      {/* Main Content Split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
         <RecentActivities />
         <div className="space-y-lg">

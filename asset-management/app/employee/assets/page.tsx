@@ -1,44 +1,48 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import MyAssetCard from '@/components/employee/MyAssetCard';
 import RecentActivityPanel from '@/components/employee/RecentActivityPanel';
+import { assets as assetsApi, type Asset } from '@/lib/api';
 
-const assets = [
-  {
-    name: 'MacBook Pro 16"',
-    tag: 'AP-LPT-2024-082',
-    icon: 'laptop_mac',
-    assignedDate: 'Jan 12, 2024',
-    condition: 'Excellent',
+function assetCardProps(asset: Asset) {
+  const iconMap: Record<string, string> = {
+    laptop: 'laptop_mac', monitor: 'desktop_windows', mobile: 'smartphone',
+    peripheral: 'keyboard', infrastructure: 'dns', furniture: 'desk', other: 'devices',
+  };
+  const conditionMap: Record<string, string> = {
+    excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor',
+  };
+  return {
+    name: asset.name,
+    tag: asset.asset_tag,
+    icon: iconMap[asset.category] ?? 'devices',
+    assignedDate: asset.purchase_date ?? 'N/A',
+    condition: conditionMap[asset.condition] ?? asset.condition,
     conditionClass: 'status-available',
-    status: 'Assigned',
-    statusClass: 'bg-secondary-fixed text-on-secondary-fixed',
-    statusDotClass: 'bg-primary animate-pulse',
-  },
-  {
-    name: 'iPhone 15 Pro Max',
-    tag: 'AP-MOB-2023-441',
-    icon: 'smartphone',
-    assignedDate: 'Sep 24, 2023',
-    condition: 'Pristine',
-    conditionClass: 'status-available',
-    status: 'Assigned',
-    statusClass: 'bg-secondary-fixed text-on-secondary-fixed',
-    statusDotClass: 'bg-primary',
-  },
-  {
-    name: 'Dell UltraSharp 32"',
-    tag: 'AP-MON-2022-119',
-    icon: 'desktop_windows',
-    assignedDate: 'Mar 05, 2022',
-    condition: 'Good',
-    conditionClass: 'status-assigned',
-    status: 'Pending Return',
-    statusClass: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
-    statusDotClass: 'bg-tertiary animate-pulse',
-    pendingReturn: true,
-  },
-];
+    status: asset.status === 'pending_return' ? 'Pending Return' : 'Assigned',
+    statusClass: asset.status === 'pending_return'
+      ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+      : 'bg-secondary-fixed text-on-secondary-fixed',
+    statusDotClass: asset.status === 'pending_return'
+      ? 'bg-tertiary animate-pulse'
+      : 'bg-primary',
+    pendingReturn: asset.status === 'pending_return',
+  };
+}
 
 export default function EmployeeAssetsPage() {
+  const [assetList, setAssetList] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    assetsApi.list({ mine: 'true' })
+      .then(setAssetList)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <>
       {/* Header */}
@@ -63,16 +67,23 @@ export default function EmployeeAssetsPage() {
         </div>
       </div>
 
+      {loading && <p className="text-on-surface-variant text-body-md">Loading assets...</p>}
+      {error && <p className="text-error text-body-md">{error}</p>}
+
       {/* Asset Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
-        {assets.map((asset) => (
-          <MyAssetCard key={asset.tag} {...asset} />
-        ))}
-      </div>
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+          {assetList.length === 0
+            ? <p className="text-on-surface-variant col-span-3">No assets assigned.</p>
+            : assetList.map((asset) => (
+                <MyAssetCard key={asset.asset_tag} {...assetCardProps(asset)} />
+              ))
+          }
+        </div>
+      )}
 
       {/* Bottom Section */}
       <div className="mt-xl grid grid-cols-1 lg:grid-cols-3 gap-lg">
-        {/* Browse Catalog CTA */}
         <div className="lg:col-span-2 bg-surface-container-low rounded-xl p-lg border border-dashed border-outline-variant flex flex-col items-center justify-center text-center min-h-[300px]">
           <div className="w-16 h-16 bg-surface-container-highest rounded-full flex items-center justify-center mb-md">
             <span className="material-symbols-outlined text-[32px] text-on-surface-variant">add_shopping_cart</span>
@@ -85,7 +96,6 @@ export default function EmployeeAssetsPage() {
             Browse Catalog
           </button>
         </div>
-
         <RecentActivityPanel />
       </div>
     </>

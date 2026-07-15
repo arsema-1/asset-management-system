@@ -1,139 +1,186 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import StatusBadge from '@/components/shared/StatusBadge';
+import { maintenance as maintenanceApi, type MaintenanceLog } from '@/lib/api';
 
 const maintenanceStatusMap: Record<string, string> = {
-  Completed: 'available',
-  'In Progress': 'maintenance',
-  Pending: 'retired',
+  completed: 'available',
+  in_progress: 'maintenance',
+  pending: 'retired',
+  cancelled: 'retired',
 };
 
-interface MaintenanceLog {
-  assetName: string;
-  assetId: string;
-  assetIcon: string;
-  iconColor: string;
-  issueType: string;
-  technician: string;
-  technicianInitials: string;
-  cost: string;
-  date: string;
-  status: 'Completed' | 'In Progress' | 'Pending';
+const statusOptions = ['pending', 'in_progress', 'completed', 'cancelled'];
+
+function formatDate(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-const logs: MaintenanceLog[] = [
-  { assetName: 'MacBook Pro #1042', assetId: 'AST-MB-990', assetIcon: 'laptop_mac', iconColor: 'text-primary', issueType: 'Hardware Repair', technician: 'James Wilson', technicianInitials: 'JW', cost: '$245.00', date: 'Oct 24, 2024', status: 'Completed' },
-  { assetName: 'Production Server S1', assetId: 'AST-SRV-001', assetIcon: 'dns', iconColor: 'text-tertiary', issueType: 'Software Update', technician: 'Elena Rodriguez', technicianInitials: 'ER', cost: '$0.00', date: 'Oct 26, 2024', status: 'In Progress' },
-  { assetName: 'Office Printer HP-X', assetId: 'AST-PRN-542', assetIcon: 'print', iconColor: 'text-secondary', issueType: 'Hardware Repair', technician: 'Marcus Chen', technicianInitials: 'MC', cost: '$112.50', date: 'Oct 27, 2024', status: 'Pending' },
-  { assetName: 'Network Switch L3', assetId: 'AST-NET-882', assetIcon: 'router', iconColor: 'text-primary', issueType: 'Routine Check', technician: 'David Miller', technicianInitials: 'DM', cost: '$55.00', date: 'Oct 28, 2024', status: 'Completed' },
-  { assetName: 'Display Panel 4K-02', assetId: 'AST-DSP-311', assetIcon: 'monitor', iconColor: 'text-tertiary', issueType: 'Hardware Repair', technician: 'Sarah Jenkins', technicianInitials: 'SJ', cost: '$180.00', date: 'Oct 29, 2024', status: 'Pending' },
-];
+function formatCost(n?: number | string) {
+  if (n == null || n === '') return '—';
+  const num = Number(n);
+  return isNaN(num) ? '—' : `$${num.toFixed(2)}`;
+}
 
 export default function MaintenanceTable() {
+  const [logs, setLogs] = useState<MaintenanceLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    maintenanceApi.list()
+      .then(setLogs)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    setUpdating(id);
+    setMenuOpen(null);
+    try {
+      const updated = await maintenanceApi.update(id, {
+        status: status as never,
+        ...(status === 'completed' ? { completed_date: new Date().toISOString().split('T')[0] } : {}),
+      });
+      // Merge the updated fields back into the log (keep joined asset/technician)
+      setLogs(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
-      {/* Table Controls */}
       <div className="px-lg py-md border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
         <div className="flex items-center gap-md">
           <button className="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[18px]">filter_list</span>
-            Filters
+            <span className="material-symbols-outlined text-[18px]">filter_list</span>Filters
           </button>
           <button className="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Export
+            <span className="material-symbols-outlined text-[18px]">download</span>Export
           </button>
         </div>
-        <span className="text-label-sm text-on-surface-variant">Showing 1–10 of 124 records</span>
+        <span className="text-label-sm text-on-surface-variant">Showing {logs.length} records</span>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-surface-container-low border-b border-outline-variant">
-            <tr>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Asset</th>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Issue Type</th>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Technician</th>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Cost</th>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-right">Date</th>
-              <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-center">Status</th>
-              <th className="px-lg py-md w-10" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant">
-            {logs.map((log) => (
-              <tr key={log.assetId} className="hover:bg-surface-container-low transition-colors group">
-                {/* Asset */}
-                <td className="px-lg py-md">
-                  <div className="flex items-center gap-md">
-                    <div className="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center flex-shrink-0">
-                      <span className={`material-symbols-outlined text-[20px] ${log.iconColor}`}>{log.assetIcon}</span>
-                    </div>
-                    <div>
-                      <p className="text-body-sm font-bold text-on-surface">{log.assetName}</p>
-                      <p className="text-label-sm text-on-surface-variant">ID: {log.assetId}</p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Issue Type */}
-                <td className="px-lg py-md">
-                  <span className="text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded">
-                    {log.issueType}
-                  </span>
-                </td>
-
-                {/* Technician */}
-                <td className="px-lg py-md">
-                  <div className="flex items-center gap-sm">
-                    <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                      {log.technicianInitials}
-                    </div>
-                    <span className="text-body-sm">{log.technician}</span>
-                  </div>
-                </td>
-
-                {/* Cost */}
-                <td className="px-lg py-md text-body-sm font-bold text-on-surface">{log.cost}</td>
-
-                {/* Date */}
-                <td className="px-lg py-md text-body-sm text-on-surface-variant text-right whitespace-nowrap">{log.date}</td>
-
-                {/* Status */}
-                <td className="px-lg py-md">
-                  <div className="flex justify-center">
-                    <StatusBadge status={maintenanceStatusMap[log.status] ?? 'retired'} label={log.status} />
-                  </div>
-                </td>
-
-                {/* Actions */}
-                <td className="px-lg py-md text-right">
-                  <button className="text-on-surface-variant hover:text-primary transition-colors">
-                    <span className="material-symbols-outlined">more_vert</span>
-                  </button>
-                </td>
+        {loading && <p className="p-lg text-on-surface-variant">Loading...</p>}
+        {error && <p className="p-lg text-error">{error}</p>}
+        {!loading && !error && (
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-surface-container-low border-b border-outline-variant">
+              <tr>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Asset</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Issue Type</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Technician</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Cost</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-right">Date</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-center">Status</th>
+                <th className="px-lg py-md w-10" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {logs.length === 0 && (
+                <tr><td colSpan={7} className="px-lg py-lg text-on-surface-variant">No maintenance records.</td></tr>
+              )}
+              {logs.map((log) => {
+                const techInitials = log.technician
+                  ? `${log.technician.first_name[0]}${log.technician.last_name[0]}`.toUpperCase()
+                  : '??';
+                const techName = log.technician
+                  ? `${log.technician.first_name} ${log.technician.last_name}`
+                  : '—';
+                const isUpdating = updating === log.id;
+
+                return (
+                  <tr key={log.id} className="hover:bg-surface-container-low transition-colors group">
+                    <td className="px-lg py-md">
+                      <div className="flex items-center gap-md">
+                        <div className="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center flex-shrink-0">
+                          <span className="material-symbols-outlined text-[20px] text-primary">build</span>
+                        </div>
+                        <div>
+                          <p className="text-body-sm font-bold text-on-surface">{log.asset?.name ?? log.asset_id}</p>
+                          <p className="text-label-sm text-on-surface-variant">{log.asset?.asset_tag ?? ''}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-lg py-md">
+                      <span className="text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded capitalize">
+                        {log.type.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-lg py-md">
+                      <div className="flex items-center gap-sm">
+                        <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          {techInitials}
+                        </div>
+                        <span className="text-body-sm">{techName}</span>
+                      </div>
+                    </td>
+                    <td className="px-lg py-md text-body-sm font-bold text-on-surface">{formatCost(log.cost)}</td>
+                    <td className="px-lg py-md text-body-sm text-on-surface-variant text-right whitespace-nowrap">
+                      {formatDate(log.scheduled_date)}
+                    </td>
+                    <td className="px-lg py-md">
+                      <div className="flex justify-center">
+                        {isUpdating
+                          ? <span className="material-symbols-outlined animate-spin text-primary">sync</span>
+                          : <StatusBadge status={maintenanceStatusMap[log.status] ?? 'retired'} label={log.status.replace(/_/g, ' ')} />
+                        }
+                      </div>
+                    </td>
+                    <td className="px-lg py-md text-right relative">
+                      <button
+                        onClick={() => setMenuOpen(menuOpen === log.id ? null : log.id)}
+                        className="text-on-surface-variant hover:text-primary transition-colors"
+                        disabled={isUpdating}
+                      >
+                        <span className="material-symbols-outlined">more_vert</span>
+                      </button>
+                      {menuOpen === log.id && (
+                        <div ref={menuRef} className="absolute right-8 top-0 z-20 w-44 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg overflow-hidden">
+                          <p className="px-md py-sm text-label-sm text-on-surface-variant uppercase font-bold border-b border-outline-variant">Change Status</p>
+                          {statusOptions.filter(s => s !== log.status).map(s => (
+                            <button
+                              key={s}
+                              onClick={() => handleStatusChange(log.id, s)}
+                              className="w-full text-left px-md py-sm text-body-sm hover:bg-surface-container transition-colors capitalize"
+                            >
+                              {s.replace(/_/g, ' ')}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Pagination */}
       <div className="border-t border-outline-variant px-lg py-md flex items-center justify-between bg-surface-container-low">
-        <button disabled className="px-md py-sm border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors disabled:opacity-50">
-          Previous
-        </button>
-        <div className="flex items-center gap-sm">
-          {[1, 2, 3].map((p) => (
-            <span key={p} className={`w-8 h-8 flex items-center justify-center rounded text-label-md cursor-pointer ${p === 1 ? 'bg-primary text-on-primary' : 'hover:bg-surface-container'}`}>
-              {p}
-            </span>
-          ))}
-          <span className="text-on-surface-variant">...</span>
-          <span className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container text-label-md cursor-pointer">13</span>
-        </div>
-        <button className="px-md py-sm border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors">
-          Next
-        </button>
+        <span className="text-body-sm text-on-surface-variant">{logs.length} records total</span>
       </div>
     </div>
   );
