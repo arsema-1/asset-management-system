@@ -59,77 +59,81 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     return;
   }
 
+  // Prevent duplicate active maintenance on same asset
+  try {
+    const dup = await db.query(
+      `SELECT id FROM maintenance_logs WHERE asset_id = $1 AND status IN ('pending','in_progress') LIMIT 1`,
+      [asset_id]
+    );
+    if (dup.rows.length > 0) {
+      res.status(409).json({ success: false, message: 'This asset already has an active maintenance log. Complete or cancel it first.' });
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+    return;
+  }
+
+  // Employee: verify asset is assigned to them, then notify admins
   if (req.user?.role === 'employee') {
-    // Verify the asset is assigned to the current employee
+    const check = await db.query(
+      `SELECT aa.id, a.name, a.asset_tag FROM asset_assignments aa
+       JOIN assets a ON aa.asset_id = a.id
+       WHERE aa.asset_id = $1 AND aa.user_id = $2 AND aa.status = 'active'`,
+      [asset_id, req.user.userId]
+    ).catch(() => ({ rows: [] }));
+
+    if (!check.rows[0]) {
+      res.status(403).json({ success: false, message: 'You can only report issues for assets assigned to you' });
+      return;
+    }
+
+    const { name: assetName, asset_tag: assetTag } = check.rows[0];
+    const userRes = await db.query(`SELECT first_name, last_name FROM users WHERE id = $1`, [req.user.userId]);
+    const reporterName = userRes.rows[0] ? `${userRes.rows[0].first_name} ${userRes.rows[0].last_name}` : 'Employee';
+
+    const client = await db.connect();
     try {
-      const check = await db.query(
-        `SELECT aa.id, a.name, a.asset_tag 
-         FROM asset_assignments aa 
-         JOIN assets a ON aa.asset_id = a.id 
-         WHERE aa.asset_id = $1 AND aa.user_id = $2 AND aa.status = 'active'`,
-        [asset_id, req.user.userId]
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `INSERT INTO maintenance_logs (asset_id, reported_by, type, description, cost)
+         VALUES ($1, $2, $3, $4, 0) RETURNING *`,
+        [asset_id, req.user.userId, type, description]
       );
-      if (!check.rows[0]) {
-        res.status(403).json({ success: false, message: 'You can only report issues for assets assigned to you' });
-        return;
-      }
+      await client.query(`UPDATE assets SET status = 'in_repair' WHERE id = $1`, [asset_id]);
 
-      const assetName = check.rows[0].name;
-      const assetTag = check.rows[0].asset_tag;
-
-      // Get employee's name
-      const userRes = await db.query(`SELECT first_name, last_name FROM users WHERE id = $1`, [req.user.userId]);
-      const reporterName = userRes.rows[0] ? `${userRes.rows[0].first_name} ${userRes.rows[0].last_name}` : 'Employee';
-
-      const client = await db.connect();
-      try {
-        await client.query('BEGIN');
-        const { rows } = await client.query(
-          `INSERT INTO maintenance_logs (asset_id, reported_by, technician_id, type, description, cost, scheduled_date)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          [asset_id, req.user.userId, null, type, description, 0, null]
-        );
-        await client.query(`UPDATE assets SET status = 'in_repair' WHERE id = $1`, [asset_id]);
-
-        // Send notification to all admin users
-        const admins = await client.query(`SELECT id FROM users WHERE role = 'admin'`);
-        for (const admin of admins.rows) {
-          await client.query(
-            `INSERT INTO notifications (user_id, type, title, body, reference_id)
-             VALUES ($1, 'maintenance', $2, $3, $4)`,
-            [
-              admin.id,
-              'Asset Issue Reported',
-              `${reporterName} reported an issue with "${assetName}" (${assetTag}): ${description}`,
-              rows[0].id
-            ]
-          );
-        }
-
-        // Log activity
+      // Notify all admins
+      const admins = await client.query(`SELECT id FROM users WHERE role = 'admin'`);
+      for (const admin of admins.rows) {
         await client.query(
-          `INSERT INTO activities (user_id, asset_id, action, description)
-           VALUES ($1, $2, 'maintenance_reported', $3)`,
-          [req.user.userId, asset_id, `Reported maintenance issue for: ${assetName}`]
+          `INSERT INTO notifications (user_id, type, title, body, reference_id)
+           VALUES ($1, 'maintenance', $2, $3, $4)`,
+          [admin.id, 'Asset Issue Reported',
+           `${reporterName} reported an issue with "${assetName}" (${assetTag}): ${description}`,
+           rows[0].id]
         );
-
-        await client.query('COMMIT');
-        created(res, rows[0], 'Maintenance issue reported to admin');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
-      } finally {
-        client.release();
       }
+
+      await client.query(
+        `INSERT INTO activities (user_id, asset_id, action, description)
+         VALUES ($1, $2, 'maintenance_reported', $3)`,
+        [req.user.userId, asset_id, `Reported issue: ${assetName}`]
+      );
+
+      await client.query('COMMIT');
+      created(res, rows[0], 'Issue reported to admin');
     } catch (err) {
+      await client.query('ROLLBACK');
       console.error(err);
       res.status(500).json({ success: false, message: 'Server error' });
+    } finally {
+      client.release();
     }
     return;
   }
 
-  // Admin User flow
+  // Admin flow
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -165,6 +169,33 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
   if (!updates.length) { badRequest(res, 'No fields to update'); return; }
   params.push(req.params.id);
 
+  // If changing status to active (pending/in_progress), check for duplicates
+  if (req.body.status && ['pending', 'in_progress'].includes(req.body.status)) {
+    try {
+      // Get the asset_id for this maintenance log first
+      const current = await db.query(`SELECT asset_id FROM maintenance_logs WHERE id = $1`, [req.params.id]);
+      if (current.rows[0]) {
+        const dup = await db.query(
+          `SELECT id FROM maintenance_logs 
+           WHERE asset_id = $1 AND status IN ('pending','in_progress') AND id != $2 
+           LIMIT 1`,
+          [current.rows[0].asset_id, req.params.id]
+        );
+        if (dup.rows.length > 0) {
+          res.status(409).json({ 
+            success: false, 
+            message: 'This asset already has an active maintenance log. Complete or cancel it first.' 
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Server error' });
+      return;
+    }
+  }
+
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -174,9 +205,11 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
     );
     if (!rows[0]) { notFound(res, 'Maintenance log not found'); return; }
 
-    // If completed, mark asset available again
-    if (req.body.status === 'completed') {
+    // Update asset status based on maintenance status
+    if (req.body.status === 'completed' || req.body.status === 'cancelled') {
       await client.query(`UPDATE assets SET status = 'available' WHERE id = $1`, [rows[0].asset_id]);
+    } else if (req.body.status === 'in_progress' || req.body.status === 'pending') {
+      await client.query(`UPDATE assets SET status = 'in_repair' WHERE id = $1`, [rows[0].asset_id]);
     }
     await client.query('COMMIT');
     ok(res, rows[0], 'Maintenance log updated');

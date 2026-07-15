@@ -4,9 +4,14 @@ import { useEffect, useState } from 'react';
 import { getUser, assignments as assignmentsApi, assetRequests, type Assignment, type AssetRequest } from '@/lib/api';
 
 export default function ProfileSummaryCard() {
-  const user = getUser();
+  const [user, setUser] = useState(getUser());
   const [activeAssets, setActiveAssets] = useState(0);
   const [pendingReqs, setPendingReqs] = useState(0);
+
+  // Defer localStorage read to avoid hydration mismatch
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   useEffect(() => {
     Promise.all([assignmentsApi.list(), assetRequests.list()])

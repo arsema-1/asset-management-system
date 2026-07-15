@@ -7,12 +7,18 @@ import { useAuth } from '@/components/shared/AuthGuard';
 
 export default function TopNav() {
   const { logout } = useAuth();
-  const user = getUser();
-  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'AU';
+  const [user, setUser] = useState(getUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'AU';
+
+  // Defer localStorage read to avoid hydration mismatch with server render
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   const fetchNotifications = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : '';
@@ -130,7 +136,7 @@ export default function TopNav() {
               <p className="text-label-md font-bold text-on-surface leading-tight">
                 {user ? `${user.first_name} ${user.last_name}` : 'Admin'}
               </p>
-              <p className="text-label-sm text-on-surface-variant leading-tight">{user?.position ?? 'Administrator'}</p>
+              <p className="text-label-sm text-on-surface-variant leading-tight" suppressHydrationWarning>{user?.position ?? 'Administrator'}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-label-md border border-outline-variant">
               {initials}

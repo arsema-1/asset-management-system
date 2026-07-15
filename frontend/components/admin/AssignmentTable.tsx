@@ -13,7 +13,11 @@ function formatDate(d?: string) {
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export default function AssignmentTable() {
+interface Props {
+  statusFilter?: string;
+}
+
+export default function AssignmentTable({ statusFilter = '' }: Props) {
   const [list, setList] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,6 +56,9 @@ export default function AssignmentTable() {
     }
   };
 
+  // Apply filtering
+  const filtered = list.filter(a => !statusFilter || a.status === statusFilter);
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
@@ -67,10 +74,12 @@ export default function AssignmentTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {list.length === 0 && (
-                <tr><td colSpan={6} className="px-lg py-lg text-on-surface-variant">No assignments found.</td></tr>
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} className="px-lg py-lg text-on-surface-variant text-center">
+                  {statusFilter ? `No ${statusFilter} assignments found.` : 'No assignments found.'}
+                </td></tr>
               )}
-              {list.map((a) => {
+              {filtered.map((a) => {
                 const userInitials = a.user
                   ? `${a.user.first_name[0]}${a.user.last_name[0]}`.toUpperCase()
                   : '??';
@@ -138,7 +147,9 @@ export default function AssignmentTable() {
         )}
       </div>
       <div className="px-lg py-md flex items-center justify-between border-t border-outline-variant bg-surface-container-low">
-        <span className="text-body-sm text-on-surface-variant">Showing {list.length} assignments</span>
+        <span className="text-body-sm text-on-surface-variant">
+          Showing {filtered.length} of {list.length} assignments
+        </span>
       </div>
     </div>
   );

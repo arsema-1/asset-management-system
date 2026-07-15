@@ -22,7 +22,12 @@ function countByStatus(rows: ReportRow[], status: string) {
 
 export default function AdminDashboard() {
   const [report, setReport] = useState<ReportData | null>(null);
-  const user = getUser();
+  const [user, setUser] = useState(getUser());
+
+  // Defer localStorage read to avoid hydration mismatch
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports`, {
@@ -39,12 +44,14 @@ export default function AdminDashboard() {
   const pending = report ? countByStatus(report.requests, 'pending') : 0;
   const inRepair = report ? countByStatus(report.assets, 'in_repair') : 0;
 
+  const activeEmployees = report?.active_employees ?? 0;
+  
   const stats = [
-    { label: 'Total Assets', value: totalAssets.toLocaleString(), note: 'All registered assets', icon: 'inventory', iconColor: 'text-primary', trend: 'trending_up', trendColor: 'text-primary' },
-    { label: 'Assigned', value: assigned.toLocaleString(), note: `${totalAssets ? Math.round((assigned / totalAssets) * 100) : 0}% utilization rate`, icon: 'person_check', iconColor: 'text-[#0ea5e9]' },
-    { label: 'Available', value: available.toLocaleString(), note: 'Ready for deployment', icon: 'check_circle', iconColor: 'text-[#22c55e]' },
-    { label: 'Pending', value: pending.toLocaleString(), note: 'Requests awaiting review', icon: 'pending_actions', iconColor: 'text-[#f59e0b]', trendColor: 'text-error' },
-    { label: 'Maintenance', value: inRepair.toLocaleString(), note: 'Assets in repair', icon: 'handyman', iconColor: 'text-error' },
+    { label: 'Total Assets', value: totalAssets.toLocaleString(), note: `${activeEmployees} active employees`, icon: 'inventory', iconColor: 'text-primary', trend: 'trending_up', trendColor: 'text-primary' },
+    { label: 'Assigned Assets', value: assigned.toLocaleString(), note: `${totalAssets ? Math.round((assigned / totalAssets) * 100) : 0}% utilization rate`, icon: 'person_check', iconColor: 'text-[#0ea5e9]' },
+    { label: 'Available Assets', value: available.toLocaleString(), note: 'Ready for deployment', icon: 'check_circle', iconColor: 'text-[#22c55e]' },
+    { label: 'Pending Requests', value: pending.toLocaleString(), note: 'Awaiting your review', icon: 'pending_actions', iconColor: 'text-[#f59e0b]' },
+    { label: 'Under Maintenance', value: inRepair.toLocaleString(), note: 'Assets being repaired', icon: 'handyman', iconColor: 'text-error' },
   ];
 
   return (

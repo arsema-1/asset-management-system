@@ -148,10 +148,10 @@ export default function NotificationList() {
       {/* Info banners */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
         <div className="p-lg rounded-xl bg-secondary-container text-on-secondary-container flex items-start gap-md border border-outline-variant">
-          <span className="material-symbols-outlined text-primary">lightbulb</span>
+          <span className="material-symbols-outlined text-primary">notifications_active</span>
           <div>
-            <h4 className="text-title-lg font-bold mb-xs">Manage Alerts</h4>
-            <p className="text-body-sm opacity-90">You'll be notified whenever an admin approves or rejects your asset requests.</p>
+            <h4 className="text-title-lg font-bold mb-xs">Real-time Alerts</h4>
+            <p className="text-body-sm opacity-90">You'll be notified immediately when admin approves or rejects your asset requests. Check this page regularly for updates.</p>
           </div>
         </div>
         <div className="p-lg rounded-xl bg-tertiary-container text-on-tertiary-container flex items-start gap-md border border-outline-variant">

@@ -142,36 +142,59 @@ export default function EmployeeAssetsPage() {
       {showCatalog && (
         <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-50 flex items-center justify-center p-md" onClick={() => setShowCatalog(false)}>
           <div className="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="p-lg border-b border-outline-variant flex justify-between items-center">
+            <div className="p-lg border-b border-outline-variant flex justify-between items-center bg-primary text-on-primary">
               <div>
                 <h3 className="text-title-lg font-bold">Available Asset Catalog</h3>
-                <p className="text-body-sm text-on-surface-variant">{catalog.length} assets available</p>
+                <p className="text-body-sm opacity-90 mt-1">
+                  {catalog.length} active {catalog.length === 1 ? 'asset' : 'assets'} available for request
+                </p>
               </div>
-              <button onClick={() => setShowCatalog(false)}><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setShowCatalog(false)} className="hover:opacity-70 transition-opacity">
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
             <div className="overflow-y-auto p-lg">
               {catalog.length === 0 ? (
-                <p className="text-on-surface-variant text-center py-xl">No available assets at this time.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-md">
-                  {catalog.map(a => (
-                    <div key={a.id} className="border border-outline-variant rounded-xl p-md flex flex-col gap-sm hover:shadow-md transition-shadow">
-                      <div className="h-24 bg-surface-container rounded-lg flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[48px] text-outline-variant">
-                          {iconMap[a.category] ?? 'devices'}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-body-sm font-bold text-on-surface">{a.name}</p>
-                        <p className="text-label-sm text-on-surface-variant">{a.asset_tag}</p>
-                        <p className="text-label-sm text-on-surface-variant capitalize">{a.category} · {conditionMap[a.condition] ?? a.condition}</p>
-                      </div>
-                      <a href="/employee/requests" className="mt-auto text-center py-sm bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-opacity">
-                        Request
-                      </a>
-                    </div>
-                  ))}
+                <div className="text-center py-xl">
+                  <span className="material-symbols-outlined text-[64px] text-on-surface-variant mb-md">inventory_2</span>
+                  <p className="text-body-lg font-bold text-on-surface mb-xs">No Available Assets</p>
+                  <p className="text-body-md text-on-surface-variant">All assets are currently assigned. Check back later.</p>
                 </div>
+              ) : (
+                <>
+                  <div className="bg-secondary-container p-md rounded-lg border border-outline-variant mb-lg">
+                    <p className="text-label-sm text-on-surface-variant flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[18px]">info</span>
+                      These assets are currently available and can be requested
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-md">
+                    {catalog.map(a => (
+                      <div key={a.id} className="border border-outline-variant rounded-xl p-md flex flex-col gap-sm hover:shadow-md hover:border-primary transition-all">
+                        <div className="h-24 bg-surface-container rounded-lg flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[48px] text-primary">
+                            {iconMap[a.category] ?? 'devices'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-xs mb-xs">
+                          <span className="px-xs py-0.5 bg-primary/10 text-primary text-label-xs font-bold rounded uppercase">Available</span>
+                          <span className="px-xs py-0.5 bg-surface-container text-on-surface-variant text-label-xs font-bold rounded uppercase">{a.condition}</span>
+                        </div>
+                        <div>
+                          <p className="text-body-sm font-bold text-on-surface">{a.name}</p>
+                          <p className="text-label-sm text-on-surface-variant">{a.asset_tag}</p>
+                          <p className="text-label-sm text-on-surface-variant capitalize">{a.category}</p>
+                        </div>
+                        <a 
+                          href="/employee/requests" 
+                          className="mt-auto text-center py-sm bg-primary text-on-primary text-label-md font-bold rounded-lg hover:opacity-90 transition-opacity"
+                        >
+                          Request This Asset
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>

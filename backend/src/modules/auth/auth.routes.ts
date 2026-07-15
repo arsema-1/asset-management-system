@@ -36,10 +36,12 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
+    // Role-based session: 7 days for employees, 24 hours for admins
+    const expiresIn = user.role === 'admin' ? '1d' : '7d';
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       config.jwtSecret as string,
-      { expiresIn: '7d' }
+      { expiresIn }
     );
     const { password_hash: _pw, ...safeUser } = user;
     ok(res, { token, user: safeUser }, 'Login successful');
@@ -77,6 +79,7 @@ router.post('/signup', async (req: Request, res: Response) => {
       [first_name, last_name, email, password, employee_id ?? null, deptId]
     );
     const user = rows[0];
+    // Signups are always employees — 7 day session
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       config.jwtSecret as string,

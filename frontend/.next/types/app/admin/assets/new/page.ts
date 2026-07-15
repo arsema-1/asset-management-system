@@ -1,4 +1,4 @@
-// File: C:\Users\arsem\Documents\asset-management-system\asset-management\app\admin\assets\new\page.tsx
+// File: C:\Users\arsem\Documents\asset-management-system\frontend\app\admin\assets\new\page.tsx
 import * as entry from '../../../../../../app/admin/assets/new/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

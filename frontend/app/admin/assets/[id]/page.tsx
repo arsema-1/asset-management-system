@@ -53,9 +53,9 @@ export default function AssetDetailPage() {
   };
 
   const handleDispose = async () => {
-    if (!confirm('Mark this asset as disposed? This cannot be undone.')) return;
+    if (!confirm('Permanently delete this asset?\n\nThis will dispose of the asset and remove it from the system entirely, including all associated records (assignments, maintenance history, activities).\n\nThis action CANNOT be undone.')) return;
     try {
-      await assetsApi.update(id, { status: 'disposed' });
+      await assetsApi.delete(id);
       router.push('/admin/assets');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to dispose');

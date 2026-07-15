@@ -8,10 +8,16 @@ import { useAuth } from '@/components/shared/AuthGuard';
 
 export default function EmployeeTopNav() {
   const { logout } = useAuth();
-  const user = getUser();
-  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'AU';
+  const [user, setUser] = useState(getUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'AU';
+
+  // Defer localStorage read to avoid hydration mismatch with server render
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   useEffect(() => {
     const fetchUnread = () => {

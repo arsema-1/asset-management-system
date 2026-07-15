@@ -8,8 +8,6 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
   localStorage.setItem('token', token);
-  // Also set cookie so Next.js middleware can read it (7 day expiry)
-  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 }
 
 export function removeToken(): void {
@@ -22,8 +20,14 @@ export function removeToken(): void {
 
 export function setUser(user: User): void {
   localStorage.setItem('user', JSON.stringify(user));
-  // Store role in cookie for middleware route guard
-  document.cookie = `role=${user.role}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+  // Role-based session: 7 days for employees, 1 day for admins
+  const maxAge = user.role === 'admin' ? 24 * 60 * 60 : 7 * 24 * 60 * 60;
+  // Set both token and role cookies with matching expiry
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  }
+  document.cookie = `role=${user.role}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 
 export function getUser(): User | null {
@@ -61,6 +65,7 @@ export interface User {
   department?: string;
   position?: string;
   phone?: string;
+  work_location?: string;
   status?: string;
 }
 
@@ -96,13 +101,19 @@ export interface Assignment {
 
 export interface AssetRequest {
   id: string;
-  user_id: string;
+  requested_by: string;
+  asset_id?: string;
   asset_name: string;
   category?: string;
   reason?: string;
   status: string;
   admin_comment?: string;
   created_at: string;
+  requested_by_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface MaintenanceLog {

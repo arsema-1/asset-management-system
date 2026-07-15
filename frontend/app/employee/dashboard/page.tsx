@@ -1,13 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { getUser } from '@/lib/api';
 import EmployeeStatCards from '@/components/employee/EmployeeStatCards';
 import MyCurrentAssets from '@/components/employee/MyCurrentAssets';
 import ActivityFeed from '@/components/employee/ActivityFeed';
 
 export default function EmployeeDashboard() {
-  const user = getUser();
+  const [user, setUser] = useState(getUser());
   const userName = user ? `${user.first_name} ${user.last_name}` : 'Employee';
+
+  // Defer localStorage read to avoid hydration mismatch
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   return (
     <div className="pt-2">

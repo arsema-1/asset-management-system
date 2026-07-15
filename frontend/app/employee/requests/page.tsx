@@ -35,8 +35,8 @@ export default function EmployeeRequestsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAsset) { setError('Please select an asset.'); return; }
-    if (!reason.trim()) { setError('Please provide a reason.'); return; }
+    if (!selectedAsset) { setError('Please select an asset from the catalog.'); return; }
+    if (!reason.trim()) { setError('Please provide a reason for this request.'); return; }
     setSaving(true);
     setError('');
     try {
@@ -44,11 +44,14 @@ export default function EmployeeRequestsPage() {
         asset_name: selectedAsset.name,
         category: selectedAsset.category as never,
         reason,
+        asset_id: selectedAsset.id, // Include asset_id for reference
       });
       setShowModal(false);
       setRefreshKey(k => k + 1);
+      // Show success feedback
+      alert(`Request submitted successfully!\n\nAsset: ${selectedAsset.name}\n\nYou will be notified when an admin reviews your request.`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to submit');
+      setError(err instanceof Error ? err.message : 'Failed to submit request. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -74,6 +77,23 @@ export default function EmployeeRequestsPage() {
 
       <RequestStatCards key={refreshKey} />
       <RequestsTable key={refreshKey} />
+
+              <div className="bg-surface-container-high/40 rounded-xl p-xl flex flex-col md:flex-row gap-lg items-center border border-dashed border-outline">
+        <div className="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary flex-shrink-0">
+          <span className="material-symbols-outlined text-[32px]">info</span>
+        </div>
+        <div className="flex-1 text-center md:text-left">
+          <h4 className="text-title-lg font-bold text-on-surface">Request Status Notifications</h4>
+          <p className="text-body-md text-on-surface-variant mt-1">
+            When admin reviews your request, you'll receive a notification with their decision and any comments.
+            Check the <span className="font-bold">Notifications</span> page regularly for updates.
+          </p>
+        </div>
+        <Link href="/employee/notifications" className="px-lg py-md bg-primary text-on-primary font-bold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-xs">
+          <span className="material-symbols-outlined text-[20px]">notifications</span>
+          View Notifications
+        </Link>
+      </div>
 
       <div className="bg-surface-container-high/40 rounded-xl p-xl flex flex-col md:flex-row gap-lg items-center border border-dashed border-outline">
         <div className="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary flex-shrink-0">
@@ -102,9 +122,20 @@ export default function EmployeeRequestsPage() {
             <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
               {/* Asset Catalog Grid */}
               <div className="p-lg flex-1 overflow-y-auto space-y-md">
-                <p className="text-label-md text-on-surface-variant">Select from available assets</p>
+                <div className="bg-secondary-container p-md rounded-lg border border-outline-variant">
+                  <p className="text-label-sm text-on-surface-variant flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[18px]">info</span>
+                    Select an asset from the catalog below. Admin will review your request and notify you.
+                  </p>
+                </div>
+                
+                <p className="text-label-md text-on-surface font-medium">Available Assets ({catalog.length})</p>
                 {catalog.length === 0 ? (
-                  <p className="text-body-sm text-on-surface-variant py-lg text-center">No available assets at this time.</p>
+                  <div className="text-center py-xl">
+                    <span className="material-symbols-outlined text-[64px] text-on-surface-variant mb-md">inventory_2</span>
+                    <p className="text-body-md text-on-surface-variant">No available assets at this time.</p>
+                    <p className="text-body-sm text-on-surface-variant mt-xs">Check back later or contact IT support.</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-sm">
                     {catalog.map(a => (
@@ -122,6 +153,7 @@ export default function EmployeeRequestsPage() {
                           <span className="material-symbols-outlined text-primary text-[20px]">
                             {iconMap[a.category] ?? 'devices'}
                           </span>
+                          <span className="text-label-xs text-on-surface-variant uppercase tracking-wider">{a.condition}</span>
                           {selectedAsset?.id === a.id && (
                             <span className="material-symbols-outlined text-primary text-[18px] ml-auto" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                           )}
@@ -148,9 +180,12 @@ export default function EmployeeRequestsPage() {
                 </div>
 
                 {selectedAsset && (
-                  <div className="flex items-center gap-sm p-sm bg-primary/5 border border-primary/20 rounded-lg">
-                    <span className="material-symbols-outlined text-primary text-[18px]">info</span>
-                    <p className="text-body-sm text-on-surface">Selected: <span className="font-bold">{selectedAsset.name}</span></p>
+                  <div className="flex items-center gap-sm p-md bg-primary text-on-primary rounded-lg">
+                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <div className="flex-1">
+                      <p className="text-label-sm opacity-90">Selected Asset</p>
+                      <p className="text-body-md font-bold">{selectedAsset.name} • {selectedAsset.asset_tag}</p>
+                    </div>
                   </div>
                 )}
 

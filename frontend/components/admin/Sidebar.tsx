@@ -8,8 +8,9 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
   { href: '/admin/assets', icon: 'inventory_2', label: 'Assets' },
+  { href: '/admin/assignments', icon: 'swap_horiz', label: 'Assignments' },
   { href: '/admin/maintenance', icon: 'build', label: 'Maintenance' },
-  { href: '/admin/assignments', icon: 'list_alt', label: 'Requests' },
+  { href: '/admin/requests', icon: 'list_alt', label: 'Requests' },
   { href: '/admin/employees', icon: 'badge', label: 'Employees' },
   { href: '/admin/reports', icon: 'analytics', label: 'Reports' },
 ];

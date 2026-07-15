@@ -65,9 +65,9 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   }
   try {
     const { rows } = await db.query(
-      `INSERT INTO asset_requests (requested_by, asset_name, category, reason)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user!.userId, asset_name, category ?? null, reason]
+      `INSERT INTO asset_requests (requested_by, asset_id, asset_name, category, reason)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.user!.userId, asset_id ?? null, asset_name, category ?? null, reason]
     );
 
     const insertedRequest = rows[0];

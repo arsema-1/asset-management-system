@@ -105,6 +105,7 @@ CREATE TABLE asset_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   requested_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  asset_id UUID REFERENCES assets(id) ON DELETE SET NULL,
   asset_name VARCHAR(200) NOT NULL,
   category asset_category,
   reason TEXT NOT NULL,
