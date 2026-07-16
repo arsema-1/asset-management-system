@@ -2,10 +2,11 @@ import { Router, Request, Response } from 'express';
 import { db } from '../../database/db';
 import { ok, created, notFound, badRequest } from '../../shared/types';
 import { authenticate } from '../../middleware/auth';
+import { withTransaction, notifyAdmins, notifyUser, logActivity, getFullName } from '../../shared/utils';
 
 const router = Router();
 
-// POST /api/returns - Request to return an asset
+// POST /api/returns - Employee requests to return an asset
 router.post('/', authenticate, async (req: Request, res: Response) => {
   const { assignment_id, condition_on_return, return_notes, return_date } = req.body;
   if (!assignment_id) {
@@ -36,13 +37,20 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       return;
     }
 
+    // Check if there's already a pending return for this assignment
+    const existingReturn = await db.query(
+      `SELECT id FROM asset_returns WHERE assignment_id = $1 AND status = 'pending'`,
+      [assignment_id]
+    );
+    if (existingReturn.rows[0]) {
+      badRequest(res, 'A return request is already pending for this assignment');
+      return;
+    }
+
     const requesterId = req.user!.userId;
-    const client = await db.connect();
 
-    try {
-      await client.query('BEGIN');
-
-      // Create return record
+    await withTransaction(async (client) => {
+      // Create return record with status 'pending'
       const { rows } = await client.query(
         `INSERT INTO asset_returns (assignment_id, requested_by, condition_on_return, return_notes, status, return_date)
          VALUES ($1, $2, $3, $4, 'pending', $5) RETURNING *`,
@@ -55,76 +63,273 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         ]
       );
 
-      // Update asset status to pending_return
-      await client.query(
-        `UPDATE assets SET status = 'pending_return' WHERE id = $1`,
-        [assignment.asset_id]
-      );
+      // IMPORTANT: Asset status remains 'assigned' while return is pending
+      // The employee still possesses the asset until the admin approves
 
-      // Update assignment status? We keep assignment active but asset status pending_return.
-      // Wait, in returns page, the employee wants to see their assets that are not returned, but if it is pending return, it should show 'Pending Return' status.
-      // Yes, MyAssetCard maps pending_return to a different badge correctly.
+      // Get requester name
+      const requesterName = await getFullName(client, requesterId);
 
-      // Get requester user name
-      const userRes = await client.query(`SELECT first_name, last_name FROM users WHERE id = $1`, [requesterId]);
-      const requesterName = userRes.rows[0] ? `${userRes.rows[0].first_name} ${userRes.rows[0].last_name}` : 'Employee';
-
-      // Notify admins
-      const admins = await client.query(`SELECT id FROM users WHERE role = 'admin'`);
-      for (const admin of admins.rows) {
-        await client.query(
-          `INSERT INTO notifications (user_id, type, title, body, reference_id)
-           VALUES ($1, 'return', $2, $3, $4)`,
-          [
-            admin.id,
-            'Asset Return Requested',
-            `${requesterName} requested to return asset "${assignment.asset_name}" (${assignment.asset_tag}).`,
-            rows[0].id
-          ]
-        );
-      }
+      // Notify admins about the return request
+      await notifyAdmins(client, {
+        type: 'return',
+        title: 'Asset Return Requested',
+        body: `${requesterName} requested to return asset "${assignment.asset_name}" (${assignment.asset_tag}).`,
+        referenceId: rows[0].id,
+      });
 
       // Log activity
-      await client.query(
-        `INSERT INTO activities (user_id, asset_id, action, description)
-         VALUES ($1, $2, 'asset_return_requested', $3)`,
-        [requesterId, assignment.asset_id, `Requested return for asset: ${assignment.asset_name}`]
-      );
+      await logActivity(client, {
+        userId: requesterId,
+        assetId: assignment.asset_id,
+        action: 'return_requested',
+        description: `${requesterName} requested to return: ${assignment.asset_name} (${assignment.asset_tag})`,
+      });
 
-      await client.query('COMMIT');
-      created(res, rows[0], 'Return request submitted successfully');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error(err);
-      res.status(500).json({ success: false, message: 'Server error' });
-    } finally {
-      client.release();
-    }
+      created(res, rows[0], 'Return request submitted successfully. Asset remains assigned until admin approval.');
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// GET /api/returns - View return requests (Admin only)
+// GET /api/returns - View return requests
 router.get('/', authenticate, async (req: Request, res: Response) => {
-  if (req.user?.role !== 'admin') {
-    res.status(403).json({ success: false, message: 'Admin access required' });
-    return;
-  }
+  const { status } = req.query as Record<string, string>;
 
   try {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (status) {
+      conditions.push(`r.status = $${params.length + 1}`);
+      params.push(status);
+    }
+
+    // Employees can only see their own return requests
+    if (req.user?.role === 'employee') {
+      conditions.push(`r.requested_by = $${params.length + 1}`);
+      params.push(req.user.userId);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const { rows } = await db.query(
       `SELECT r.*,
-         json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name) AS requested_by_user,
-         json_build_object('id', a.id, 'name', a.name, 'asset_tag', a.asset_tag) AS asset
+         json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email) AS requested_by_user,
+         json_build_object('id', a.id, 'name', a.name, 'asset_tag', a.asset_tag, 'category', a.category) AS asset,
+         json_build_object('id', aa.id, 'assigned_date', aa.assigned_date, 'status', aa.status) AS assignment,
+         CASE WHEN r.processed_by IS NOT NULL
+           THEN json_build_object('id', p.id, 'first_name', p.first_name, 'last_name', p.last_name)
+           ELSE NULL
+         END AS processed_by_user
        FROM asset_returns r
        JOIN users u ON r.requested_by = u.id
        JOIN asset_assignments aa ON r.assignment_id = aa.id
        JOIN assets a ON aa.asset_id = a.id
-       ORDER BY r.created_at DESC`
+       LEFT JOIN users p ON r.processed_by = p.id
+       ${where}
+       ORDER BY r.created_at DESC`,
+      params
     );
+
     ok(res, rows, 'Return requests retrieved');
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET /api/returns/:id
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT r.*,
+         json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email) AS requested_by_user,
+         json_build_object('id', a.id, 'name', a.name, 'asset_tag', a.asset_tag, 'category', a.category) AS asset,
+         json_build_object('id', aa.id, 'assigned_date', aa.assigned_date, 'status', aa.status) AS assignment,
+         CASE WHEN r.processed_by IS NOT NULL
+           THEN json_build_object('id', p.id, 'first_name', p.first_name, 'last_name', p.last_name)
+           ELSE NULL
+         END AS processed_by_user
+       FROM asset_returns r
+       JOIN users u ON r.requested_by = u.id
+       JOIN asset_assignments aa ON r.assignment_id = aa.id
+       JOIN assets a ON aa.asset_id = a.id
+       LEFT JOIN users p ON r.processed_by = p.id
+       WHERE r.id = $1`,
+      [req.params.id]
+    );
+    if (!rows[0]) { notFound(res, 'Return request not found'); return; }
+
+    // Employees can only see their own return requests
+    if (req.user?.role === 'employee' && rows[0].requested_by !== req.user.userId) {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+
+    ok(res, rows[0], 'Return request retrieved');
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// PUT /api/returns/:id - Admin approves or rejects a return request
+router.put('/:id', authenticate, async (req: Request, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ success: false, message: 'Admin access required' });
+    return;
+  }
+  const { status, admin_comment, condition_on_return } = req.body;
+  if (!status || !['approved', 'rejected'].includes(status)) {
+    badRequest(res, 'Status must be either "approved" or "rejected"');
+    return;
+  }
+  // Cast to string since Express body-parser can return string[] for query params
+  const adminComment = String(admin_comment ?? '');
+  const conditionOnReturn = condition_on_return ? String(condition_on_return) : null;
+
+  try {
+    // Get the return request with related data
+    const returnRes = await db.query(
+      `SELECT r.*, aa.asset_id, aa.id AS assignment_id, aa.status AS assignment_status,
+              a.name AS asset_name, a.asset_tag, a.status AS asset_status,
+              u.id AS employee_id, u.first_name, u.last_name
+       FROM asset_returns r
+       JOIN asset_assignments aa ON r.assignment_id = aa.id
+       JOIN assets a ON aa.asset_id = a.id
+       JOIN users u ON r.requested_by = u.id
+       WHERE r.id = $1 AND r.status = 'pending'`,
+      [req.params.id]
+    );
+
+    if (!returnRes.rows[0]) {
+      notFound(res, 'Pending return request not found');
+      return;
+    }
+
+    const returnReq = returnRes.rows[0];
+    const returnId = req.params.id as string;
+
+    await withTransaction(async (client) => {
+      if (status === 'approved') {
+        // ── APPROVE RETURN ──────────────────────────────────────
+        // 1. Update return record status to 'received', record who processed it, update condition if provided
+        const returnUpdateFields = [
+          `status = 'received'`,
+          `processed_by = $1`,
+          `return_date = CURRENT_DATE`
+        ];
+        const returnUpdateParams: unknown[] = [req.user!.userId];
+        
+        if (adminComment) {
+          returnUpdateFields.push(`return_notes = $${returnUpdateParams.length + 1}`);
+          returnUpdateParams.push(adminComment);
+        }
+        if (conditionOnReturn) {
+          returnUpdateFields.push(`condition_on_return = $${returnUpdateParams.length + 1}`);
+          returnUpdateParams.push(conditionOnReturn);
+        }
+        returnUpdateParams.push(returnId);
+        
+        await client.query(
+          `UPDATE asset_returns
+           SET ${returnUpdateFields.join(', ')}
+           WHERE id = $${returnUpdateParams.length}`,
+          returnUpdateParams
+        );
+
+        // 2. Close the active assignment
+        await client.query(
+          `UPDATE asset_assignments
+           SET status = 'returned', actual_return_date = CURRENT_DATE
+           WHERE id = $1 AND status = 'active'`,
+          [returnReq.assignment_id]
+        );
+
+        // 3. Update asset status back to 'available' and condition if provided
+        if (conditionOnReturn) {
+          await client.query(
+            `UPDATE assets SET status = 'available', condition = $1 WHERE id = $2`,
+            [conditionOnReturn, returnReq.asset_id]
+          );
+        } else {
+          await client.query(
+            `UPDATE assets SET status = 'available' WHERE id = $1`,
+            [returnReq.asset_id]
+          );
+        }
+
+        // 4. Notify the employee that their return was approved
+        await notifyUser(client, {
+          userId: returnReq.employee_id,
+          type: 'return',
+          title: 'Asset Return Approved',
+          body: `Your return request for "${returnReq.asset_name}" (${returnReq.asset_tag}) has been approved. The asset is now marked as available.`,
+          referenceId: returnId,
+        });
+
+        // 5. Log the approval activity
+        await logActivity(client, {
+          userId: req.user!.userId,
+          assetId: returnReq.asset_id,
+          action: 'return_approved',
+          description: `Return approved: "${returnReq.asset_name}" (${returnReq.asset_tag}) returned by ${returnReq.first_name} ${returnReq.last_name}`,
+        });
+
+        ok(res, {
+          id: returnId,
+          status: 'received',
+          message: 'Return approved. Asset marked as available. Assignment closed.',
+        }, 'Return approved successfully');
+      } else {
+        // ── REJECT RETURN ───────────────────────────────────────
+        // 1. Update return record status to 'rejected'
+        await client.query(
+          `UPDATE asset_returns
+           SET status = 'rejected', processed_by = $1, return_notes = COALESCE($2, return_notes)
+           WHERE id = $3`,
+          [req.user!.userId, adminComment || null, returnId]
+        );
+
+        // 2. Asset status stays 'assigned' - employee still has it
+        // 3. Assignment stays 'active' - no changes needed
+        // 4. Update asset condition if provided by admin
+        if (conditionOnReturn) {
+          await client.query(
+            `UPDATE assets SET condition = $1 WHERE id = $2`,
+            [conditionOnReturn, returnReq.asset_id]
+          );
+        }
+
+        // 5. Notify the employee that their return was rejected
+        const rejectionReason = adminComment
+          ? ` Reason: ${adminComment}`
+          : '';
+        await notifyUser(client, {
+          userId: returnReq.employee_id,
+          type: 'return',
+          title: 'Asset Return Rejected',
+          body: `Your return request for "${returnReq.asset_name}" (${returnReq.asset_tag}) was not approved.${rejectionReason} The asset remains assigned to you.`,
+          referenceId: returnId,
+        });
+
+        // 5. Log the rejection activity
+        await logActivity(client, {
+          userId: req.user!.userId,
+          assetId: returnReq.asset_id,
+          action: 'return_rejected',
+          description: `Return rejected: "${returnReq.asset_name}" (${returnReq.asset_tag}) - ${adminComment || 'No reason provided'}`,
+        });
+
+        ok(res, {
+          id: returnId,
+          status: 'rejected',
+          message: `Return request rejected. Asset remains assigned to employee.`,
+        }, 'Return rejected');
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });

@@ -2,6 +2,8 @@
 -- DROP ALL TABLES (run this to reset before re-running schema.sql)
 -- ============================================================
 
+DROP TABLE IF EXISTS email_verification_tokens CASCADE;
+DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS activities CASCADE;
 DROP TABLE IF EXISTS asset_returns CASCADE;

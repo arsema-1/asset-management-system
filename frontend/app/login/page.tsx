@@ -13,21 +13,44 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
     try {
       const { token, user } = await auth.login(email, password);
       setToken(token);
       setUser(user);
       router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid email or password.');
+      const msg = err instanceof Error ? err.message : 'Invalid email or password.';
+      setError(msg);
+      // Detect email verification error from the backend response
+      if (msg.toLowerCase().includes('verify your email')) {
+        setNeedsVerification(true);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) return;
+    setResending(true);
+    setError('');
+    try {
+      await auth.resendVerification(email);
+      setResendSent(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -122,8 +145,49 @@ export default function LoginPage() {
               </label>
             </div>
 
-            {error && (
+            {error && !needsVerification && (
               <p className="text-body-sm text-error bg-error-container px-md py-sm rounded-lg">{error}</p>
+            )}
+
+            {needsVerification && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-md space-y-sm">
+                <div className="flex items-start gap-sm">
+                  <span className="material-symbols-outlined text-yellow-600 text-[20px] flex-shrink-0">mark_email_unread</span>
+                  <div>
+                    <p className="text-body-sm font-bold text-yellow-800">Email not verified</p>
+                    <p className="text-body-xs text-yellow-700 mt-1">
+                      Your account hasn&apos;t been verified yet. Check your inbox for the verification link we sent when you signed up.
+                    </p>
+                  </div>
+                </div>
+                {resendSent ? (
+                  <div className="flex items-center gap-sm bg-green-50 border border-green-200 rounded-lg px-md py-sm">
+                    <span className="material-symbols-outlined text-green-600 text-[18px]">check_circle</span>
+                    <p className="text-body-xs text-green-700 font-medium">
+                      Verification email sent! Check <strong>{email}</strong> for the link.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="w-full py-2 rounded-lg text-label-sm font-bold flex items-center justify-center gap-xs transition-all disabled:opacity-60 bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                  >
+                    {resending ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin text-[16px]">sync</span>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-[16px]">send</span>
+                        Resend Verification Email
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Submit */}

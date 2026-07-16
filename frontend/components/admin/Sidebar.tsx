@@ -9,6 +9,7 @@ const config: SidebarConfig = {
     { href: '/admin/assignments', icon: 'swap_horiz', label: 'Assignments' },
     { href: '/admin/maintenance', icon: 'build', label: 'Maintenance' },
     { href: '/admin/requests', icon: 'list_alt', label: 'Requests' },
+    { href: '/admin/returns', icon: 'assignment_return', label: 'Returns' },
     { href: '/admin/employees', icon: 'badge', label: 'Employees' },
     { href: '/admin/reports', icon: 'analytics', label: 'Reports' },
   ],

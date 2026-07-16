@@ -11,10 +11,15 @@ const SELECT_MAINTENANCE = `
     CASE WHEN t.id IS NOT NULL
       THEN json_build_object('id', t.id, 'first_name', t.first_name, 'last_name', t.last_name)
       ELSE NULL
-    END AS technician
+    END AS technician,
+    CASE WHEN r.id IS NOT NULL
+      THEN json_build_object('id', r.id, 'first_name', r.first_name, 'last_name', r.last_name)
+      ELSE NULL
+    END AS reported_by_user
   FROM maintenance_logs ml
   JOIN assets a ON ml.asset_id = a.id
   LEFT JOIN users t ON ml.technician_id = t.id
+  LEFT JOIN users r ON ml.reported_by = r.id
 `;
 
 // GET /api/maintenance

@@ -96,6 +96,18 @@ router.put('/:id', authenticate, async (req: Request, res: Response) => {
 
   try {
     const result = await withTransaction(async (client) => {
+      // First get the current request to check if it has an asset_id
+      const currentReq = await client.query(
+        `SELECT ar.*, a.name AS asset_name_full, a.status AS asset_status, a.asset_tag
+         FROM asset_requests ar
+         LEFT JOIN assets a ON ar.asset_id = a.id
+         WHERE ar.id = $1`,
+        [req.params.id]
+      );
+      if (!currentReq.rows[0]) { notFound(res, 'Request not found'); return null; }
+      const reqData = currentReq.rows[0];
+
+      // Update the request status
       const { rows } = await client.query(
         `UPDATE asset_requests SET ${updates.join(', ')} WHERE id = $${params.length + 1} RETURNING *`,
         [...params, req.params.id]
@@ -103,18 +115,76 @@ router.put('/:id', authenticate, async (req: Request, res: Response) => {
       if (!rows[0]) { notFound(res, 'Request not found'); return null; }
       const updated = rows[0];
 
-      if (status === 'approved' || status === 'rejected') {
+      if (status === 'approved') {
+        // ── APPROVED: Auto-assign if a specific asset was requested ──
+        if (reqData.asset_id && reqData.asset_status === 'available') {
+          // Check that asset is still available
+          const assetCheck = await client.query(
+            `SELECT status FROM assets WHERE id = $1`,
+            [reqData.asset_id]
+          );
+          if (assetCheck.rows[0]?.status === 'available') {
+            // Create the assignment
+            await client.query(
+              `INSERT INTO asset_assignments (asset_id, user_id, assigned_by, notes)
+               VALUES ($1, $2, $3, $4)`,
+              [reqData.asset_id, updated.requested_by, req.user!.userId,
+               `Auto-assigned via approved request: ${updated.asset_name}`]
+            );
+
+            // Update asset status
+            await client.query(
+              `UPDATE assets SET status = 'assigned' WHERE id = $1`,
+              [reqData.asset_id]
+            );
+
+            // Log the assignment activity
+            await logActivity(client, {
+              userId: req.user!.userId,
+              assetId: reqData.asset_id,
+              action: 'asset_assigned',
+              description: `Assigned "${reqData.asset_name_full}" (${reqData.asset_tag}) to user via approved request: ${updated.asset_name}`,
+            });
+
+            // Notify the employee
+            await notifyUser(client, {
+              userId: updated.requested_by,
+              type: 'assignment',
+              title: `Asset Assigned: ${reqData.asset_name_full}`,
+              body: `Your request for "${updated.asset_name}" was approved and "${reqData.asset_name_full}" (${reqData.asset_tag}) has been assigned to you.`,
+              referenceId: updated.id,
+            });
+          } else {
+            // Asset no longer available - still approve the request but notify differently
+            await notifyUser(client, {
+              userId: updated.requested_by,
+              type: 'request',
+              title: `Your request for "${updated.asset_name}" was approved`,
+              body: `Your request has been approved but the requested asset is no longer available (${assetCheck.rows[0]?.status ?? 'unknown'}). Please contact IT for an alternative assignment.`,
+              referenceId: updated.id,
+            });
+          }
+        } else {
+          // No specific asset requested — just notify approval
+          await notifyUser(client, {
+            userId: updated.requested_by,
+            type: 'request',
+            title: `Your request for "${updated.asset_name}" was approved`,
+            body: admin_comment
+              ? `Admin comment: ${admin_comment}. Please visit IT to receive your asset.`
+              : 'Your request has been approved. Please visit IT to receive your asset.',
+            referenceId: updated.id,
+          });
+        }
+      } else if (status === 'rejected') {
+        // ── REJECTED: Just notify ──
         await notifyUser(client, {
           userId: updated.requested_by,
           type: 'request',
-          title: status === 'approved'
-            ? `Your request for "${updated.asset_name}" was approved`
-            : `Your request for "${updated.asset_name}" was rejected`,
+          title: `Your request for "${updated.asset_name}" was not approved`,
           body: admin_comment
             ? `Admin comment: ${admin_comment}`
-            : status === 'approved'
-              ? 'Your request has been approved. Please check with IT for pickup details.'
-              : 'Your request was not approved at this time.',
+            : 'Your request was not approved at this time.',
           referenceId: updated.id,
         });
       }

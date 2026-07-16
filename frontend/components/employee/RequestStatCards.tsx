@@ -3,12 +3,16 @@
 import { useEffect, useState } from 'react';
 import { assetRequests, type AssetRequest } from '@/lib/api';
 
-export default function RequestStatCards() {
+interface Props {
+  refreshKey?: number;
+}
+
+export default function RequestStatCards({ refreshKey = 0 }: Props) {
   const [requests, setRequests] = useState<AssetRequest[]>([]);
 
   useEffect(() => {
     assetRequests.list().then(setRequests).catch(() => {});
-  }, []);
+  }, [refreshKey]);
 
   const total = requests.length;
   const pending = requests.filter((r) => r.status === 'pending').length;

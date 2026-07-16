@@ -95,7 +95,7 @@ export default function AdminRequestsPage() {
       <div className="bg-secondary-container p-md rounded-lg border border-outline-variant mb-lg">
         <p className="text-label-sm text-on-surface-variant flex items-center gap-xs">
           <span className="material-symbols-outlined text-[18px]">info</span>
-          For each request, you can either <span className="font-bold">Approve</span> (asset will be assigned) or <span className="font-bold">Reject</span> (with optional feedback)
+          For each request, you can either <span className="font-bold">Approve</span> (the requested asset will be automatically assigned to the employee) or <span className="font-bold">Reject</span> (with optional feedback)
         </p>
       </div>
 
@@ -263,9 +263,13 @@ export default function AdminRequestsPage() {
                   <div>
                     <p className="text-label-sm font-bold text-on-surface">What happens next?</p>
                     <ul className="text-body-xs text-on-surface-variant mt-1 space-y-0.5 list-disc list-inside">
-                      <li>The employee will be notified of the approval</li>
-                      <li>The request status will be updated to "approved"</li>
-                      <li>An IT admin can proceed with the assignment</li>
+                      {confirmApprove.asset_id ? (
+                        <li>The requested asset will be <strong>automatically assigned</strong> to the employee</li>
+                      ) : (
+                        <li>The employee will be notified to <strong>visit IT</strong> for pickup</li>
+                      )}
+                      <li>The request will be updated to "approved"</li>
+                      <li>The employee will be notified</li>
                     </ul>
                   </div>
                 </div>

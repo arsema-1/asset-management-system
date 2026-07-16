@@ -108,6 +108,22 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
     const oldStatus = current.rows[0].status;
     const newStatus = req.body.status;
 
+    // ── Block manual status change to 'available' if asset has active assignment ──
+    if (newStatus === 'available' && oldStatus === 'assigned') {
+      const activeAssignment = await client.query(
+        `SELECT id FROM asset_assignments WHERE asset_id = $1 AND status = 'active' LIMIT 1`,
+        [req.params.id]
+      );
+      if (activeAssignment.rows[0]) {
+        await client.query('ROLLBACK');
+        res.status(400).json({
+          success: false,
+          message: 'Cannot manually set this asset to "Available" because it has an active assignment. Please process the return first.'
+        });
+        return;
+      }
+    }
+
     // Apply the update
     const { rows } = await client.query(
       `UPDATE assets SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { auth } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -16,12 +17,10 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log('Password reset request for:', email);
+      await auth.forgotPassword(email);
       setSuccess(true);
-    } catch (err) {
-      setError('Failed to send reset link. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to send reset link. Please try again.');
     } finally {
       setLoading(false);
     }

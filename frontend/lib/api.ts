@@ -128,8 +128,14 @@ export interface MaintenanceLog {
   status: string;
   scheduled_date?: string;
   completed_date?: string;
+  created_at?: string;
   asset?: Asset;
   technician?: User;
+  reported_by_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 // ── Auth ───────────────────────────────────────────────
@@ -155,6 +161,24 @@ export const auth = {
 
   logout: () =>
     request<null>('/auth/logout', { method: 'POST' }),
+
+  forgotPassword: (email: string) =>
+    request<null>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, email: string, password: string) =>
+    request<null>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, email, password }),
+    }),
+
+  resendVerification: (email: string) =>
+    request<null>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
 };
 
 // ── Assets ─────────────────────────────────────────────
@@ -195,10 +219,52 @@ export const users = {
     }),
 };
 
+// ── Return Request Types ───────────────────────────────
+export interface ReturnRequest {
+  id: string;
+  assignment_id: string;
+  requested_by: string;
+  processed_by?: string;
+  condition_on_return?: string;
+  return_notes?: string;
+  status: string;
+  return_date?: string;
+  created_at: string;
+  requested_by_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+  };
+  processed_by_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+  asset?: {
+    id: string;
+    name: string;
+    asset_tag: string;
+    category?: string;
+  };
+  assignment?: {
+    id: string;
+    assigned_date: string;
+    status: string;
+  };
+}
+
 // ── Returns ────────────────────────────────────────────
 export const returns = {
   create: (data: { assignment_id: string; condition_on_return?: string; return_notes?: string; return_date?: string }) =>
     request<unknown>('/returns', { method: 'POST', body: JSON.stringify(data) }),
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<ReturnRequest[]>(`/returns${qs}`);
+  },
+  get: (id: string) => request<ReturnRequest>(`/returns/${id}`),
+  update: (id: string, data: { status: string; admin_comment?: string; condition_on_return?: string }) =>
+    request<unknown>(`/returns/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // ── Assignments ────────────────────────────────────────

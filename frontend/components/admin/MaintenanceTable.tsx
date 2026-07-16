@@ -78,10 +78,10 @@ export default function MaintenanceTable() {
             <thead className="bg-surface-container-low border-b border-outline-variant">
               <tr>
                 <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Asset</th>
-                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Issue Type</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Issue</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Reported By</th>
                 <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Technician</th>
-                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Cost</th>
-                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-right">Date</th>
+                <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider">Date</th>
                 <th className="px-lg py-md text-label-sm uppercase text-on-surface-variant tracking-wider text-center">Status</th>
                 <th className="px-lg py-md w-10" />
               </tr>
@@ -95,6 +95,10 @@ export default function MaintenanceTable() {
                 const techName = log.technician
                   ? `${log.technician.first_name} ${log.technician.last_name}`
                   : '—';
+                const reporter = log.reported_by_user
+                  ? `${log.reported_by_user.first_name} ${log.reported_by_user.last_name}`
+                  : 'System';
+                const isEmployeeReported = !!log.reported_by_user;
                 const isUpdating = updating === log.id;
 
                 return (
@@ -110,22 +114,48 @@ export default function MaintenanceTable() {
                         </div>
                       </div>
                     </td>
+                    <td className="px-lg py-md max-w-[200px]">
+                      <div className="space-y-1">
+                        <span className="text-body-xs font-medium text-on-surface-variant bg-surface-container px-sm py-0.5 rounded capitalize inline-block">
+                          {log.type.replace(/_/g, ' ')}
+                        </span>
+                        {log.description && (
+                          <p className="text-body-xs text-on-surface-variant line-clamp-2 leading-tight" title={log.description}>
+                            {log.description}
+                          </p>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-lg py-md">
-                      <span className="text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded capitalize">
-                        {log.type.replace(/_/g, ' ')}
-                      </span>
+                      <div className="flex items-center gap-sm">
+                        {isEmployeeReported ? (
+                          <>
+                            <div className="w-6 h-6 rounded-full bg-error-container text-on-error-container flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                              {getInitials(log.reported_by_user?.first_name, log.reported_by_user?.last_name)}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-body-xs font-medium text-on-surface">{reporter}</span>
+                              <span className="text-[10px] text-error font-medium flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">person</span>
+                                Employee Report
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-body-xs text-on-surface-variant">{reporter}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-lg py-md">
                       <div className="flex items-center gap-sm">
                         <div className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                           {techInitials}
                         </div>
-                        <span className="text-body-sm">{techName}</span>
+                        <span className="text-body-xs">{techName}</span>
                       </div>
                     </td>
-                    <td className="px-lg py-md text-body-sm font-bold text-on-surface">{formatCost(log.cost)}</td>
-                    <td className="px-lg py-md text-body-sm text-on-surface-variant text-right whitespace-nowrap">
-                      {formatDate(log.scheduled_date)}
+                    <td className="px-lg py-md text-body-xs text-on-surface-variant whitespace-nowrap">
+                      {formatDate(log.created_at ?? log.scheduled_date)}
                     </td>
                     <td className="px-lg py-md">
                       <div className="flex justify-center">
@@ -146,6 +176,11 @@ export default function MaintenanceTable() {
                       {menuOpen === log.id && (
                         <div ref={menuRef} className="absolute right-8 top-0 z-20 w-44 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg overflow-hidden">
                           <p className="px-md py-sm text-label-sm text-on-surface-variant uppercase font-bold border-b border-outline-variant">Change Status</p>
+                          {log.description && (
+                            <p className="px-md py-sm text-body-xs text-on-surface-variant border-b border-outline-variant">
+                              {log.description}
+                            </p>
+                          )}
                           {statusOptions.filter(s => s !== log.status).map(s => (
                             <button
                               key={s}

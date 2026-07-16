@@ -13,18 +13,19 @@ const iconMap: Record<string, string> = {
   chair: 'chair', dock: 'dock', headphones: 'headphones',
 };
 
-export default function RequestsTable() {
+export default function RequestsTable({ refreshKey = 0 }: { refreshKey?: number }) {
   const [requests, setRequests] = useState<AssetRequest[]>([]);
   const [selected, setSelected] = useState<AssetRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
     assetRequests.list()
       .then(setRequests)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   const statusLabel = (s: string) =>
     s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() as 'Pending' | 'Approved' | 'Completed' | 'Rejected';

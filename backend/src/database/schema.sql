@@ -50,6 +50,7 @@ CREATE TABLE users (
   work_location VARCHAR(150),
   status employee_status NOT NULL DEFAULT 'active',
   two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   avatar_url TEXT,
   joined_date DATE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -210,8 +211,36 @@ CREATE INDEX idx_activities_user ON activities(user_id);
 CREATE INDEX idx_activities_asset ON activities(asset_id);
 CREATE INDEX idx_activities_created ON activities(created_at DESC);
 
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(user_id, is_read);
+-- ============================================================
+-- PASSWORD RESET TOKENS
+-- ============================================================
+
+CREATE TABLE password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_reset_tokens_user ON password_reset_tokens(user_id);
+CREATE INDEX idx_reset_tokens_token ON password_reset_tokens(token);
+
+-- ============================================================
+-- EMAIL VERIFICATION TOKENS
+-- ============================================================
+
+CREATE TABLE email_verification_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_email_verification_user ON email_verification_tokens(user_id);
+CREATE INDEX idx_email_verification_token ON email_verification_tokens(token);
 
 -- ============================================================
 -- UPDATED_AT TRIGGER

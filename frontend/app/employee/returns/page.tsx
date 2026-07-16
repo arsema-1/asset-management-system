@@ -59,7 +59,12 @@ export default function ReturnsPage() {
       );
       setSubmitState('success');
       setSelected([]);
-      setMyAssignments(prev => prev.filter(a => !selected.includes(a.id)));
+      // Refetch to show updated state (pending return badge)
+      setTimeout(() => {
+        assignmentsApi.list({ status: 'active' })
+          .then(setMyAssignments)
+          .catch(() => {});
+      }, 500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit return');
       setSubmitState('idle');

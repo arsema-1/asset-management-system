@@ -9,6 +9,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [signedUp, setSignedUp] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -19,6 +21,12 @@ export default function SignupPage() {
     const employee_id = (form.elements.namedItem('employee_id') as HTMLInputElement).value.trim();
     const department = (form.elements.namedItem('department') as HTMLSelectElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+    // Validate @gmail.com
+    if (!email.toLowerCase().endsWith('@gmail.com')) {
+      setError('Only @gmail.com email addresses are allowed to sign up.');
+      return;
+    }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -31,16 +39,98 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
     try {
-      const { token, user } = await auth.signup({ first_name, last_name, email, password, employee_id, department });
-      setToken(token);
-      setUser(user);
-      router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
+      await auth.signup({ first_name, last_name, email, password, employee_id, department });
+      setSignupEmail(email);
+      setSignedUp(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  const [resending, setResending] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const [resendError, setResendError] = useState('');
+
+  const handleResend = async () => {
+    if (!signupEmail) return;
+    setResending(true);
+    setResendError('');
+    try {
+      await auth.resendVerification(signupEmail);
+      setResendSent(true);
+    } catch (err: unknown) {
+      setResendError(err instanceof Error ? err.message : 'Failed to resend');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (signedUp) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-md relative overflow-hidden">
+        <div className="fixed inset-0 -z-10"
+          style={{
+            background: 'linear-gradient(-45deg, #58C6D7, #004ac6, #2563eb, #d3e4fe)',
+            backgroundSize: '400% 400%',
+            animation: 'gradientFlow 15s ease infinite',
+          }}
+        />
+        <style>{`
+          @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `}</style>
+        <div className="w-full max-w-[480px] bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl p-xl text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-lg">
+            <span className="material-symbols-outlined text-green-600 text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>mark_email_read</span>
+          </div>
+          <h2 className="text-headline-lg font-bold text-on-surface mb-sm">Check Your Email</h2>
+          <p className="text-body-md text-on-surface-variant mb-md">
+            We sent a verification link to <strong>{signupEmail}</strong>.
+          </p>
+          <p className="text-body-sm text-on-surface-variant mb-lg">
+            Click the link in the email to verify your account, then you can log in.
+          </p>
+          <div className="flex flex-col gap-sm">
+            <Link href="/login" className="w-full py-md rounded-lg text-label-md font-bold text-white text-center" style={{ backgroundColor: '#58C6D7' }}>
+              Go to Login
+            </Link>
+            <div className="border-t border-outline-variant pt-md mt-md">
+              <p className="text-body-xs text-on-surface-variant mb-sm">
+                Didn&apos;t receive the email?
+              </p>
+              {resendSent ? (
+                <p className="text-body-xs text-green-600 font-medium">
+                  ✉️ Verification email resent to <strong>{signupEmail}</strong>. Check your inbox.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="text-label-sm font-bold hover:underline disabled:opacity-60 flex items-center justify-center gap-xs mx-auto"
+                  style={{ color: '#58C6D7' }}
+                >
+                  {resending ? (
+                    <><span className="material-symbols-outlined animate-spin text-[16px]">sync</span> Sending...</>
+                  ) : (
+                    <><span className="material-symbols-outlined text-[16px]">send</span> Resend verification email</>
+                  )}
+                </button>
+              )}
+              {resendError && (
+                <p className="text-body-xs text-error mt-sm">{resendError}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center p-md relative overflow-hidden">
@@ -121,7 +211,9 @@ export default function SignupPage() {
 
             {/* Work Email */}
             <div className="space-y-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="email">Work Email</label>
+              <label className="text-label-md text-on-surface-variant" htmlFor="email">
+                Email <span className="text-body-xs text-on-surface-variant">(must be @gmail.com)</span>
+              </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline text-[20px]">mail</span>
                 <input
@@ -129,7 +221,7 @@ export default function SignupPage() {
                   name="email"
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="name@gmail.com"
                   className="w-full pl-11 pr-md py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-body-md text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>

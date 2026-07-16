@@ -1,8 +1,10 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
-  "/admin/assets/page": "app/admin/assets/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/forgot-password/page": "app/forgot-password/page.js",
+  "/reset-password/page": "app/reset-password/page.js",
   "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/maintenance/page": "app/admin/maintenance/page.js"
+  "/employee/requests/page": "app/employee/requests/page.js",
+  "/employee/notifications/page": "app/employee/notifications/page.js",
+  "/employee/profile/page": "app/employee/profile/page.js",
+  "/employee/dashboard/page": "app/employee/dashboard/page.js"
 }

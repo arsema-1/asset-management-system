@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 const actions = [
   { icon: 'add_box', bgColor: 'bg-primary', title: 'Add New Asset', desc: 'Register a new device to inventory', href: '/admin/assets/new' },
   { icon: 'assignment_ind', bgColor: 'bg-[#0ea5e9]', title: 'Assign Asset', desc: 'Allocate asset to a specific user', href: '/admin/assignments' },
+  { icon: 'assignment_return', bgColor: 'bg-[#22c55e]', title: 'Review Returns', desc: 'Approve or reject asset returns', href: '/admin/returns' },
   { icon: 'description', bgColor: 'bg-[#8b5cf6]', title: 'View Reports', desc: 'Export customized audit logs', href: '/admin/reports' },
 ];
 

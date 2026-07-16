@@ -75,39 +75,51 @@ export default function EmployeeRequestsPage() {
         </button>
       </div>
 
-      <RequestStatCards key={refreshKey} />
-      <RequestsTable key={refreshKey} />
+      <RequestStatCards refreshKey={refreshKey} />
+      <RequestsTable refreshKey={refreshKey} />
 
-              <div className="bg-surface-container-high/40 rounded-xl p-xl flex flex-col md:flex-row gap-lg items-center border border-dashed border-outline">
-        <div className="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[32px]">info</span>
-        </div>
-        <div className="flex-1 text-center md:text-left">
-          <h4 className="text-title-lg font-bold text-on-surface">Request Status Notifications</h4>
-          <p className="text-body-md text-on-surface-variant mt-1">
-            When admin reviews your request, you'll receive a notification with their decision and any comments.
-            Check the <span className="font-bold">Notifications</span> page regularly for updates.
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+        <div className="bg-gradient-to-br from-primary to-primary/80 text-on-primary rounded-xl p-lg flex flex-col gap-md shadow-md">
+          <div className="flex items-center gap-sm">
+            <span className="material-symbols-outlined text-[28px]">notifications</span>
+            <span className="text-title-lg font-bold">Stay Updated</span>
+          </div>
+          <p className="text-body-sm opacity-90 leading-relaxed">
+            You'll receive notifications when an admin reviews your request.
           </p>
+          <Link href="/employee/notifications" className="mt-auto inline-flex items-center gap-xs text-label-sm font-bold text-on-primary/90 hover:text-on-primary transition-colors">
+            <span>View Notifications</span>
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </Link>
         </div>
-        <Link href="/employee/notifications" className="px-lg py-md bg-primary text-on-primary font-bold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[20px]">notifications</span>
-          View Notifications
-        </Link>
-      </div>
 
-      <div className="bg-surface-container-high/40 rounded-xl p-xl flex flex-col md:flex-row gap-lg items-center border border-dashed border-outline">
-        <div className="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[32px]">lightbulb</span>
-        </div>
-        <div className="flex-1">
-          <h4 className="text-title-lg font-bold text-on-surface">Need assistance with your equipment?</h4>
-          <p className="text-body-md text-on-surface-variant mt-1">
-            If your current assets are damaged or malfunctioning, please contact IT support instead.
+        <div className="bg-gradient-to-br from-secondary-container to-secondary-container/60 text-on-secondary-container rounded-xl p-lg flex flex-col gap-md shadow-sm border border-outline-variant">
+          <div className="flex items-center gap-sm">
+            <span className="material-symbols-outlined text-[28px]">support_agent</span>
+            <span className="text-title-lg font-bold">Need IT Help?</span>
+          </div>
+          <p className="text-body-sm text-on-surface leading-relaxed">
+            For damaged or malfunctioning equipment, contact IT support directly.
           </p>
+          <Link href="/employee/support" className="mt-auto inline-flex items-center gap-xs text-label-sm font-bold text-primary hover:text-primary/80 transition-colors">
+            <span>Contact IT Support</span>
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </Link>
         </div>
-        <Link href="/employee/support" className="px-lg py-md border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-colors whitespace-nowrap">
-          Contact IT Support
-        </Link>
+
+        <div className="bg-gradient-to-br from-surface-container-high to-surface-container text-on-surface rounded-xl p-lg flex flex-col gap-md shadow-sm border border-dashed border-outline-variant">
+          <div className="flex items-center gap-sm">
+            <span className="material-symbols-outlined text-[28px] text-primary">history</span>
+            <span className="text-title-lg font-bold">Track Progress</span>
+          </div>
+          <p className="text-body-sm text-on-surface-variant leading-relaxed">
+            Monitor your request status in the table below. Approved requests are processed by IT.
+          </p>
+          <span className="mt-auto inline-flex items-center gap-xs text-label-sm font-bold text-on-surface-variant">
+            <span>Scroll down to view</span>
+            <span className="material-symbols-outlined text-[16px]">expand_more</span>
+          </span>
+        </div>
       </div>
 
       {/* New Request Modal */}
@@ -153,14 +165,14 @@ export default function EmployeeRequestsPage() {
                           <span className="material-symbols-outlined text-primary text-[20px]">
                             {iconMap[a.category] ?? 'devices'}
                           </span>
-                          <span className="text-label-xs text-on-surface-variant uppercase tracking-wider">{a.condition}</span>
                           {selectedAsset?.id === a.id && (
                             <span className="material-symbols-outlined text-primary text-[18px] ml-auto" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                           )}
                         </div>
                         <p className="text-body-sm font-bold text-on-surface truncate">{a.name}</p>
                         <p className="text-label-sm text-on-surface-variant">{a.asset_tag}</p>
-                        <p className="text-label-sm text-on-surface-variant capitalize">{a.category} · {a.condition}</p>
+                        <p className="text-label-sm text-on-surface-variant capitalize">{a.category}</p>
+                        <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">{a.condition}</span>
                       </button>
                     ))}
                   </div>
