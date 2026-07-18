@@ -26,7 +26,7 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response) 
   addFilter(conditions, params, 'LOWER(d.name)', department ? department.toLowerCase() : undefined);
   if (search) {
     const idx = params.length + 1;
-    conditions.push(`(u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx} OR u.email ILIKE $${idx})`);
+    conditions.push(`(u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx} OR (u.first_name || ' ' || u.last_name) ILIKE $${idx} OR u.email ILIKE $${idx} OR u.employee_id ILIKE $${idx} OR u.id::text ILIKE $${idx})`);
     params.push(`%${search}%`);
   }
 

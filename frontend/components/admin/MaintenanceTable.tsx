@@ -59,14 +59,7 @@ export default function MaintenanceTable() {
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
       <div className="px-lg py-md border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
-        <div className="flex items-center gap-md">
-          <button className="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[18px]">filter_list</span>Filters
-          </button>
-          <button className="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg text-label-md hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[18px]">download</span>Export
-          </button>
-        </div>
+
         <span className="text-label-sm text-on-surface-variant">Showing {logs.length} records</span>
       </div>
 

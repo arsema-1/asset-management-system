@@ -10,6 +10,9 @@ export default function EmployeesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [search, setSearch] = useState('');
+  const [department, setDepartment] = useState('');
+  const [status, setStatus] = useState('');
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,8 +59,20 @@ export default function EmployeesPage() {
         </button>
       </div>
 
-      <EmployeeFilterBar />
-      <EmployeeTable key={refreshKey} />
+      <EmployeeFilterBar
+        search={search}
+        onSearch={setSearch}
+        department={department}
+        onDepartment={setDepartment}
+        status={status}
+        onStatus={setStatus}
+      />
+      <EmployeeTable
+        key={refreshKey}
+        search={search}
+        department={department}
+        status={status}
+      />
 
       {showModal && (
         <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-50 flex items-center justify-center p-md" onClick={() => setShowModal(false)}>

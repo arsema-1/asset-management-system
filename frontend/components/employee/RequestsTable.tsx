@@ -36,14 +36,7 @@ export default function RequestsTable({ refreshKey = 0 }: { refreshKey?: number 
         {/* Header */}
         <div className="p-lg border-b border-outline-variant flex justify-between items-center">
           <h3 className="text-title-lg font-bold text-on-surface">Recent Requests</h3>
-          <div className="flex gap-md">
-            <button className="flex items-center gap-xs px-md py-2 border border-outline-variant rounded-lg text-body-sm hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-[20px]">filter_list</span>Filter
-            </button>
-            <button className="flex items-center gap-xs px-md py-2 border border-outline-variant rounded-lg text-body-sm hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-[20px]">download</span>Export
-            </button>
-          </div>
+
         </div>
 
         {/* Table */}

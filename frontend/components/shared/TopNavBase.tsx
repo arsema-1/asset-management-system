@@ -30,19 +30,8 @@ export default function TopNavBase({
 
   return (
     <header className="sticky top-0 z-40 h-16 bg-surface-container-lowest border-b border-outline-variant px-lg flex justify-between items-center shadow-sm">
-      {/* Search */}
-      <div className="flex items-center gap-xl flex-1 pl-10 lg:pl-0">
-        <div className="relative w-full max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-            search
-          </span>
-          <input
-            className="w-full bg-surface-container border-none rounded-full pl-10 pr-4 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-            placeholder={searchPlaceholder}
-            type="text"
-          />
-        </div>
-      </div>
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Actions */}
       <div className="flex items-center gap-lg">

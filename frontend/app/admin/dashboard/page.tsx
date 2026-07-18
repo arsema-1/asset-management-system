@@ -67,16 +67,7 @@ export default function AdminDashboard() {
             Here is an overview of your organization&apos;s assets and activities for today.
           </p>
         </div>
-        <div className="flex gap-md">
-          <button className="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">filter_list</span>
-            <span className="text-label-md">Filter</span>
-          </button>
-          <button className="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-lg hover:opacity-90 transition-opacity shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">download</span>
-            <span className="text-label-md">Export Data</span>
-          </button>
-        </div>
+
       </section>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-md">

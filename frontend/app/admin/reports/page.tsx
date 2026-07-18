@@ -60,10 +60,7 @@ export default function ReportsPage() {
           </nav>
           <h2 className="text-headline-lg font-bold text-on-surface">Reports & Analytics</h2>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-sm px-lg py-md bg-primary text-on-primary rounded-lg font-bold hover:opacity-90 shadow-sm">
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          Export
-        </button>
+
       </div>
 
       {loading && <p className="text-on-surface-variant">Loading reports...</p>}
