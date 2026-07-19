@@ -67,6 +67,10 @@ export interface User {
   phone?: string;
   work_location?: string;
   status?: string;
+  avatar_url?: string;
+  joined_date?: string;
+  two_factor_enabled?: boolean;
+  created_at?: string;
 }
 
 export interface Asset {

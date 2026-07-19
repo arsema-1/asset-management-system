@@ -15,12 +15,16 @@ const SELECT_ASSIGNMENT = `
 `;
 // GET /api/assignments
 router.get('/', auth_1.authenticate, async (req, res) => {
-    const { status } = req.query;
+    const { status, user_id } = req.query;
     const conditions = [];
     const params = [];
     if (req.user?.role === 'employee') {
         conditions.push(`aa.user_id = $${params.length + 1}`);
         params.push(req.user.userId);
+    }
+    else if (req.user?.role === 'admin' && user_id) {
+        conditions.push(`aa.user_id = $${params.length + 1}`);
+        params.push(user_id);
     }
     if (status) {
         conditions.push(`aa.status = $${params.length + 1}`);

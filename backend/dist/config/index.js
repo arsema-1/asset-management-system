@@ -21,4 +21,13 @@ exports.config = {
         user: process.env.DB_USER ?? 'postgres',
         password: process.env.DB_PASSWORD ?? '424211',
     },
+    smtp: {
+        host: process.env.SMTP_HOST ?? 'sandbox.smtp.mailtrap.io',
+        port: parseInt(process.env.SMTP_PORT ?? '2525', 10),
+        user: process.env.SMTP_USER ?? '',
+        pass: process.env.SMTP_PASS ?? '',
+        fromAddress: process.env.SMTP_FROM ?? 'noreply@assetflow.com',
+        fromName: process.env.SMTP_FROM_NAME ?? 'AssetFlow Systems',
+    },
+    appUrl: process.env.APP_URL ?? 'http://localhost:3000',
 };

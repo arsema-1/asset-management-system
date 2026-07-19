@@ -97,28 +97,155 @@ router.put('/:id', auth_1.authenticate, auth_1.requireAdmin, async (req, res) =>
         return;
     }
     params.push(req.params.id);
+    const client = await db_1.db.connect();
     try {
-        const { rows } = await db_1.db.query(`UPDATE assets SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`, params);
-        if (!rows[0]) {
+        await client.query('BEGIN');
+        // Get current asset state before update
+        const current = await client.query(`SELECT status, name FROM assets WHERE id = $1`, [req.params.id]);
+        if (!current.rows[0]) {
+            await client.query('ROLLBACK');
             (0, types_1.notFound)(res, 'Asset not found');
             return;
         }
-        (0, types_1.ok)(res, rows[0], 'Asset updated');
+        const oldStatus = current.rows[0].status;
+        const newStatus = req.body.status;
+        // ── Block manual status change to 'available' if asset has active assignment ──
+        if (newStatus === 'available' && oldStatus === 'assigned') {
+            const activeAssignment = await client.query(`SELECT id FROM asset_assignments WHERE asset_id = $1 AND status = 'active' LIMIT 1`, [req.params.id]);
+            if (activeAssignment.rows[0]) {
+                await client.query('ROLLBACK');
+                res.status(400).json({
+                    success: false,
+                    message: 'Cannot manually set this asset to "Available" because it has an active assignment. Please process the return first.'
+                });
+                return;
+            }
+        }
+        // Apply the update
+        const { rows } = await client.query(`UPDATE assets SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`, params);
+        if (!rows[0]) {
+            await client.query('ROLLBACK');
+            (0, types_1.notFound)(res, 'Asset not found');
+            return;
+        }
+        const updatedAsset = rows[0];
+        // ── Status Propagation ────────────────────────────────────
+        if (newStatus && oldStatus !== newStatus) {
+            // Log the status change activity
+            await client.query(`INSERT INTO activities (user_id, asset_id, action, description)
+         VALUES ($1, $2, 'asset_status_changed', $3)`, [req.user.userId, req.params.id, `Status changed from "${oldStatus}" to "${newStatus}" for: ${updatedAsset.name}`]);
+            if (newStatus === 'available') {
+                // Close any active maintenance logs
+                await client.query(`UPDATE maintenance_logs SET status = 'completed', completed_date = CURRENT_DATE
+           WHERE asset_id = $1 AND status IN ('pending', 'in_progress')`, [req.params.id]);
+                // Close any active assignments
+                await client.query(`UPDATE asset_assignments SET status = 'returned', actual_return_date = CURRENT_DATE
+           WHERE asset_id = $1 AND status IN ('active', 'overdue')`, [req.params.id]);
+            }
+            else if (newStatus === 'disposed') {
+                // Cascade delete the asset and all related records instead of just updating status
+                await client.query(`DELETE FROM asset_returns WHERE assignment_id IN (SELECT id FROM asset_assignments WHERE asset_id = $1)`, [req.params.id]);
+                await client.query(`DELETE FROM activities WHERE asset_id = $1`, [req.params.id]);
+                await client.query(`DELETE FROM maintenance_logs WHERE asset_id = $1`, [req.params.id]);
+                await client.query(`DELETE FROM asset_assignments WHERE asset_id = $1`, [req.params.id]);
+                await client.query(`UPDATE asset_requests SET asset_id = NULL WHERE asset_id = $1`, [req.params.id]);
+                await client.query(`DELETE FROM assets WHERE id = $1`, [req.params.id]);
+                // Log the disposal activity
+                await client.query(`INSERT INTO activities (user_id, action, description)
+           VALUES ($1, 'asset_disposed', $2)`, [req.user.userId, `Disposed and deleted asset "${updatedAsset.name}" (${updatedAsset.asset_tag})`]);
+            }
+            else if (newStatus === 'in_repair') {
+                // Close any active assignments since the asset is going for repair
+                await client.query(`UPDATE asset_assignments SET status = 'returned', actual_return_date = CURRENT_DATE
+           WHERE asset_id = $1 AND status IN ('active', 'overdue')`, [req.params.id]);
+            }
+            // Notify admins about the status change
+            const admins = await client.query(`SELECT id FROM users WHERE role = 'admin'`);
+            for (const admin of admins.rows) {
+                if (admin.id !== req.user.userId) { // Don't notify the admin who made the change
+                    await client.query(`INSERT INTO notifications (user_id, type, title, body, reference_id)
+             VALUES ($1, 'system', $2, $3, $4)`, [admin.id, 'Asset Status Updated',
+                        `"${updatedAsset.name}" (${updatedAsset.asset_tag}) status changed from "${oldStatus}" to "${newStatus}".`,
+                        req.params.id]);
+                }
+            }
+            // Notify employee who had this asset assigned (if any)
+            const assignee = await client.query(`SELECT user_id FROM asset_assignments WHERE asset_id = $1 ORDER BY updated_at DESC LIMIT 1`, [req.params.id]);
+            if (assignee.rows[0]) {
+                await client.query(`INSERT INTO notifications (user_id, type, title, body, reference_id)
+           VALUES ($1, 'system', $2, $3, $4)`, [assignee.rows[0].user_id, 'Asset Status Updated',
+                    `"${updatedAsset.name}" (${updatedAsset.asset_tag}) status: ${newStatus}.`,
+                    req.params.id]);
+            }
+        }
+        await client.query('COMMIT');
+        (0, types_1.ok)(res, updatedAsset, 'Asset updated');
     }
     catch (err) {
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+    finally {
+        client.release();
     }
 });
 // DELETE /api/assets/:id
 router.delete('/:id', auth_1.authenticate, auth_1.requireAdmin, async (req, res) => {
     try {
-        const { rowCount } = await db_1.db.query(`DELETE FROM assets WHERE id = $1`, [req.params.id]);
-        if (!rowCount) {
+        // Verify asset exists and check its status
+        const assetRecord = await db_1.db.query(`SELECT id, name, asset_tag, status FROM assets WHERE id = $1`, [req.params.id]);
+        if (!assetRecord.rows[0]) {
             (0, types_1.notFound)(res, 'Asset not found');
             return;
         }
-        (0, types_1.ok)(res, null, 'Asset deleted');
+        const asset = assetRecord.rows[0];
+        // Block deletion for active assignments/in-use assets
+        const activeStatuses = ['assigned', 'in_repair', 'pending_return'];
+        if (activeStatuses.includes(asset.status)) {
+            const messages = {
+                assigned: 'Cannot delete an assigned asset. Please process the return first.',
+                in_repair: 'Cannot delete an asset that is currently under repair. Complete or cancel maintenance first.',
+                pending_return: 'Cannot delete an asset with a pending return request. Process the return first.',
+            };
+            res.status(400).json({ success: false, message: messages[asset.status] ?? 'Cannot delete asset in its current state.' });
+            return;
+        }
+        const client = await db_1.db.connect();
+        try {
+            await client.query('BEGIN');
+            // Delete related records in order to avoid foreign key violations
+            // 1. Delete asset_returns (via assignment_id → asset_assignments → assets)
+            await client.query(`DELETE FROM asset_returns WHERE assignment_id IN (SELECT id FROM asset_assignments WHERE asset_id = $1)`, [req.params.id]);
+            // 2. Delete activities referencing this asset
+            await client.query(`DELETE FROM activities WHERE asset_id = $1`, [req.params.id]);
+            // 3. Delete maintenance_logs referencing this asset
+            await client.query(`DELETE FROM maintenance_logs WHERE asset_id = $1`, [req.params.id]);
+            // 4. Delete asset_assignments referencing this asset
+            await client.query(`DELETE FROM asset_assignments WHERE asset_id = $1`, [req.params.id]);
+            // 5. Update asset_requests to remove asset_id reference
+            await client.query(`UPDATE asset_requests SET asset_id = NULL WHERE asset_id = $1`, [req.params.id]);
+            // 6. Finally delete the asset itself
+            const { rowCount } = await client.query(`DELETE FROM assets WHERE id = $1`, [req.params.id]);
+            if (!rowCount) {
+                await client.query('ROLLBACK');
+                (0, types_1.notFound)(res, 'Asset not found');
+                return;
+            }
+            // Log the deletion activity
+            await client.query(`INSERT INTO activities (user_id, action, description)
+         VALUES ($1, 'asset_deleted', $2)`, [req.user.userId, `Deleted asset "${asset.name}" (${asset.asset_tag})`]);
+            await client.query('COMMIT');
+            (0, types_1.ok)(res, null, 'Asset deleted successfully along with all associated records');
+        }
+        catch (err) {
+            await client.query('ROLLBACK');
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+        finally {
+            client.release();
+        }
     }
     catch (err) {
         console.error(err);
