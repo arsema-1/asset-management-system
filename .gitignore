@@ -3,7 +3,7 @@ C:\Users\arsem\Documents\asset-management-system\backend\.env
 .env.example
 .vscode
 .gitattributes
-
+frontend/.env.local
 
 backend/dist/
 frontend/.next/
