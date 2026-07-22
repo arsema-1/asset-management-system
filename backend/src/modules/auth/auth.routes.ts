@@ -2,12 +2,74 @@ import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import rateLimit from 'express-rate-limit';
 import { db } from '../../database/db';
 import { config } from '../../config';
 import { ok, badRequest } from '../../shared/types';
 import { withTransaction } from '../../shared/utils';
 
 const router = Router();
+
+// ── Login rate limiter ────────────────────────────────
+// Blocks an IP after 5 failed attempts within 15 minutes
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // only count failed attempts
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many login attempts. Please try again in 15 minutes.'
+    });
+  }
+});
+
+// ── Signup rate limiter ───────────────────────────────
+// Max 3 signups per hour per IP to prevent spam account creation
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many signup attempts. Please try again later.'
+    });
+  }
+});
+
+// ── Forgot-password rate limiter ──────────────────────
+// Max 3 password reset requests per hour per IP to prevent email bombing
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many password reset attempts. Please try again later.'
+    });
+  }
+});
+
+// ── Resend-verification rate limiter ──────────────────
+// Max 3 resend attempts per hour per IP
+const resendVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many verification resend attempts. Please try again later.'
+    });
+  }
+});
 
 // ── Nodemailer transporter (Mailtrap / SMTP) ──────────────
 const transporter = nodemailer.createTransport({
@@ -20,7 +82,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     badRequest(res, 'Email and password are required');
@@ -86,7 +148,7 @@ function isEmailAllowed(email: string): boolean {
 }
 
 // POST /api/auth/signup
-router.post('/signup', async (req: Request, res: Response) => {
+router.post('/signup', signupLimiter, async (req: Request, res: Response) => {
   const { first_name, last_name, email, password, employee_id, department } = req.body;
   if (!first_name || !last_name || !email || !password) {
     badRequest(res, 'first_name, last_name, email, and password are required');
@@ -268,7 +330,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/resend-verification
-router.post('/resend-verification', async (req: Request, res: Response) => {
+router.post('/resend-verification', resendVerificationLimiter, async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     badRequest(res, 'Email is required');
@@ -373,7 +435,7 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
 router.post('/logout', (_req, res) => ok(res, null, 'Logged out'));
 
 // ── Forgot Password ───────────────────────────────────────
-router.post('/forgot-password', async (req: Request, res: Response) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     badRequest(res, 'Email is required');
