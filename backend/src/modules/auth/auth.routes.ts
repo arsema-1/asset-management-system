@@ -98,7 +98,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
       [email]
     );
     if (!rows[0]) {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
+      res.status(401).json({ success: false, message: 'No account found with this email' });
       return;
     }
     const user = rows[0];
@@ -117,7 +117,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
       [password, user.id]
     );
     if (!pwRows[0]?.valid) {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
+      res.status(401).json({ success: false, message: 'Incorrect password' });
       return;
     }
     // Role-based session: 7 days for employees, 24 hours for admins
