@@ -220,6 +220,20 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     );
 
     if (!rows[0]) {
+      // Token not found or expired — check if user is already verified
+      // (handles double-fetch from React Strict Mode and clicking the link twice)
+      const { rows: userRows } = await db.query(
+        `SELECT email_verified FROM users WHERE email = $1`,
+        [email]
+      );
+      if (userRows[0]?.email_verified) {
+        // Already verified — return success so the UI shows a proper message
+        res.status(200).json({
+          success: true,
+          message: 'Email already verified! You can log in.'
+        });
+        return;
+      }
       res.status(400).json({
         success: false,
         message: 'Invalid or expired verification token. Please sign up again.'

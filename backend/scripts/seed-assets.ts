@@ -12,7 +12,6 @@ const pool = new Pool({
 const assets = [
   {
     name: 'MacBook Pro 16" M3',
-    asset_tag: 'AST-001',
     serial_number: 'SN-MBP-M3-2024-001',
     category: 'laptop',
     status: 'available',
@@ -26,7 +25,6 @@ const assets = [
   },
   {
     name: 'Dell UltraSharp 27" Monitor',
-    asset_tag: 'AST-002',
     serial_number: 'SN-DELL-U2723-2024-001',
     category: 'monitor',
     status: 'assigned',
@@ -40,7 +38,6 @@ const assets = [
   },
   {
     name: 'iPhone 15 Pro Max',
-    asset_tag: 'AST-003',
     serial_number: 'SN-IP15PM-2024-003',
     category: 'mobile',
     status: 'assigned',
@@ -54,7 +51,6 @@ const assets = [
   },
   {
     name: 'Logitech MX Master 3S Mouse',
-    asset_tag: 'AST-004',
     serial_number: 'SN-LOG-MX3S-2024-001',
     category: 'peripheral',
     status: 'available',
@@ -68,7 +64,6 @@ const assets = [
   },
   {
     name: 'Cisco Meraki MR56 Access Point',
-    asset_tag: 'AST-005',
     serial_number: 'SN-CISCO-MR56-2024-001',
     category: 'infrastructure',
     status: 'available',
@@ -82,7 +77,6 @@ const assets = [
   },
   {
     name: 'Herman Miller Aeron Chair',
-    asset_tag: 'AST-006',
     serial_number: 'SN-HM-AERON-2024-001',
     category: 'furniture',
     status: 'assigned',
@@ -96,7 +90,6 @@ const assets = [
   },
   {
     name: 'Samsung Galaxy Tab S9 Ultra',
-    asset_tag: 'AST-007',
     serial_number: 'SN-SAM-TAB9-2024-001',
     category: 'mobile',
     status: 'in_repair',
@@ -110,7 +103,6 @@ const assets = [
   },
   {
     name: 'Synology DS1823xs+ NAS',
-    asset_tag: 'AST-008',
     serial_number: 'SN-SYN-DS1823-2024-001',
     category: 'infrastructure',
     status: 'available',
@@ -124,7 +116,6 @@ const assets = [
   },
   {
     name: 'Apple Magic Keyboard (US Layout)',
-    asset_tag: 'AST-009',
     serial_number: 'SN-APL-MK-2024-001',
     category: 'peripheral',
     status: 'available',
@@ -138,7 +129,6 @@ const assets = [
   },
   {
     name: 'LG 34" UltraWide Curved Monitor',
-    asset_tag: 'AST-010',
     serial_number: 'SN-LG-34WN80C-2024-001',
     category: 'monitor',
     status: 'assigned',
@@ -159,12 +149,11 @@ async function seedAssets() {
 
     for (const asset of assets) {
       const { rows } = await client.query(
-        `INSERT INTO assets (name, asset_tag, serial_number, category, status, condition, purchase_date, purchase_cost, warranty_expiry, vendor, location, description)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `INSERT INTO assets (name, serial_number, category, status, condition, purchase_date, purchase_cost, warranty_expiry, vendor, location, description)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id, name, asset_tag, category, status`,
         [
           asset.name,
-          asset.asset_tag,
           asset.serial_number,
           asset.category,
           asset.status,
@@ -180,6 +169,12 @@ async function seedAssets() {
       const a = rows[0];
       console.log(`  ✅ ${a.asset_tag} - ${a.name} (${a.category}, ${a.status})`);
     }
+
+    // Advance the sequence past the seeded assets
+    await client.query(`SELECT setval('asset_tag_seq', COALESCE(
+      (SELECT MAX(CAST(REGEXP_REPLACE(asset_tag, '[^0-9]', '', 'g') AS INTEGER)) FROM assets),
+      0
+    ))`);
 
     console.log('\n🎉 All 10 assets seeded successfully!');
   } catch (err) {

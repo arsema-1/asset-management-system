@@ -216,7 +216,7 @@ export default function AssetDetailPage() {
               <button onClick={() => setEditing(false)}><span className="material-symbols-outlined">close</span></button>
             </div>
             <div className="p-lg space-y-md max-h-[70vh] overflow-y-auto">
-              {(['name','asset_tag','serial_number','vendor','location'] as const).map(field => (
+              {(['name','serial_number','vendor','location'] as const).map(field => (
                 <div key={field} className="space-y-xs">
                   <label className="text-label-md text-on-surface-variant capitalize">{field.replace(/_/g, ' ')}</label>
                   <input
@@ -226,6 +226,15 @@ export default function AssetDetailPage() {
                   />
                 </div>
               ))}
+              {/* Asset tag — read-only, auto-generated */}
+              <div className="space-y-xs">
+                <label className="text-label-md text-on-surface-variant capitalize">Asset Tag</label>
+                <div className="flex items-center gap-sm w-full px-md py-sm border border-outline-variant rounded-lg text-body-md bg-surface-container/50">
+                  <span className="material-symbols-outlined text-[18px] text-on-surface-variant">tag</span>
+                  <span className="text-on-surface font-medium">{asset.asset_tag}</span>
+                  <span className="ml-auto text-body-xs text-on-surface-variant">Auto-generated</span>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-md">
                 <div className="space-y-xs">
                   <label className="text-label-md text-on-surface-variant">Status</label>

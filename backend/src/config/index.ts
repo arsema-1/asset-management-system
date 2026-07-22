@@ -10,6 +10,7 @@ export const config = {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
   },
   db: {
+    url: process.env.DATABASE_URL,
     host: process.env.DB_HOST ?? '127.0.0.1',
     port: parseInt(process.env.DB_PORT ?? '5432', 10),
     database: process.env.DB_NAME ?? 'asset_management_db',

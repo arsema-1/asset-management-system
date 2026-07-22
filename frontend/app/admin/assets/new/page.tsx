@@ -20,7 +20,6 @@ export default function NewAssetPage() {
     try {
       await assetsApi.create({
         name: get('name')!,
-        asset_tag: get('asset_tag')!,
         serial_number: get('serial_number'),
         category: get('category')!,
         status: (get('status') ?? 'available') as never,
@@ -54,16 +53,16 @@ export default function NewAssetPage() {
         <h2 className="text-headline-lg font-bold text-on-surface mb-xl">Add New Asset</h2>
 
         <form onSubmit={handleSubmit} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl space-y-md shadow-sm">
-          {/* Name + Tag */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-            <div className="space-y-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="name">Asset Name *</label>
-              <input id="name" name="name" required placeholder="MacBook Pro 16&quot;" className="input-field" />
-            </div>
-            <div className="space-y-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="asset_tag">Asset Tag *</label>
-              <input id="asset_tag" name="asset_tag" required placeholder="AST-2024-001" className="input-field" />
-            </div>
+          {/* Auto-generated tag notice */}
+          <div className="flex items-center gap-sm px-md py-sm bg-primary-container/40 text-on-primary-container rounded-lg text-body-sm">
+            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+            <span>Asset tag (<strong>AST-XXXXXX</strong>) is auto-generated. No need to enter one.</span>
+          </div>
+
+          {/* Name (full width — tag is auto-generated) */}
+          <div className="space-y-xs">
+            <label className="text-label-md text-on-surface-variant" htmlFor="name">Asset Name *</label>
+            <input id="name" name="name" required placeholder="MacBook Pro 16&quot;" className="input-field" />
           </div>
 
           {/* Serial + Category */}

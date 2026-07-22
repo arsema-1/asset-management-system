@@ -46,6 +46,6 @@ app.use(errorHandler);
 // ── Start server ────────────────────────────────────────
 const PORT = config.port;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📡 Environment: ${config.nodeEnv}`);
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(`Environment: ${config.nodeEnv}`);
 });

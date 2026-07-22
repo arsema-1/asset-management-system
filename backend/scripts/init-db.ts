@@ -1,15 +1,23 @@
-import { Pool } from 'pg';
+import { Pool, type PoolConfig } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../src/config';
 
-const pool = new Pool({
-  host: config.db.host,
-  port: config.db.port,
-  database: config.db.database,
-  user: config.db.user,
-  password: config.db.password,
-});
+const poolOptions: PoolConfig = {
+  connectionTimeoutMillis: 10000, // Neon cold starts can take 5+ seconds
+};
+
+if (config.db.url) {
+  poolOptions.connectionString = config.db.url;
+} else {
+  poolOptions.host = config.db.host;
+  poolOptions.port = config.db.port;
+  poolOptions.database = config.db.database;
+  poolOptions.user = config.db.user;
+  poolOptions.password = config.db.password;
+}
+
+const pool = new Pool(poolOptions);
 
 async function initializeDatabase() {
   const client = await pool.connect();
@@ -19,21 +27,19 @@ async function initializeDatabase() {
     const schemaPath = path.join(__dirname, '../src/database/schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf-8');
     
-    // Split by semicolon and execute each statement
-    const statements = schema
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s && !s.startsWith('--'));
-    
-    for (const statement of statements) {
-      try {
-        await client.query(statement);
-      } catch (err: unknown) {
-        const error = err as { code?: string; message?: string };
-        // Ignore "already exists" errors
-        if (error.code !== '42P07' && error.code !== '42710' && !error.message?.includes('already exists')) {
-          throw err;
-        }
+    // Execute the entire schema at once (splitting by ; breaks dollar-quoted functions)
+    try {
+      await client.query(schema);
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      // Ignore "already exists" errors for idempotent re-runs
+      if (
+        error.code !== '42P07' &&
+        error.code !== '42710' &&
+        error.code !== '42723' &&
+        !error.message?.includes('already exists')
+      ) {
+        throw err;
       }
     }
     

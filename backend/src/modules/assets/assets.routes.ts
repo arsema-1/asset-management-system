@@ -54,16 +54,25 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
 router.post('/', authenticate, requireAdmin, async (req: Request, res: Response) => {
   const { name, asset_tag, serial_number, category, status, condition,
           purchase_date, purchase_cost, warranty_expiry, vendor, location, description } = req.body;
-  if (!name || !asset_tag || !category) {
-    badRequest(res, 'name, asset_tag, and category are required');
+  if (!name || !category) {
+    badRequest(res, 'name and category are required');
     return;
   }
   try {
+    // Auto-generate asset tag if not provided (format: AST-XXXXXX)
+    let tag = asset_tag;
+    if (!tag) {
+      const { rows: seqRows } = await db.query(
+        `SELECT 'AST-' || LPAD(nextval('asset_tag_seq')::TEXT, 6, '0') AS tag`
+      );
+      tag = seqRows[0].tag;
+    }
+
     const { rows } = await db.query(
       `INSERT INTO assets (name, asset_tag, serial_number, category, status, condition,
         purchase_date, purchase_cost, warranty_expiry, vendor, location, description)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-      [name, asset_tag, serial_number ?? null, category, status ?? 'available',
+      [name, tag, serial_number ?? null, category, status ?? 'available',
        condition ?? 'good', purchase_date ?? null, purchase_cost ?? null,
        warranty_expiry ?? null, vendor ?? null, location ?? null, description ?? null]
     );
