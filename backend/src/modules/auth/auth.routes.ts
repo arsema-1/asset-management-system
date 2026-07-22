@@ -11,13 +11,12 @@ import { withTransaction } from '../../shared/utils';
 const router = Router();
 
 // ── Login rate limiter ────────────────────────────────
-// Blocks an IP after 5 failed attempts within 15 minutes
+// Blocks an IP after 5 attempts within 15 minutes
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // only count failed attempts
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
       success: false,
@@ -27,10 +26,10 @@ const loginLimiter = rateLimit({
 });
 
 // ── Signup rate limiter ───────────────────────────────
-// Max 3 signups per hour per IP to prevent spam account creation
+// Max 5 signups per hour per IP to prevent spam account creation
 const signupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req: Request, res: Response) => {
@@ -42,10 +41,10 @@ const signupLimiter = rateLimit({
 });
 
 // ── Forgot-password rate limiter ──────────────────────
-// Max 3 password reset requests per hour per IP to prevent email bombing
+// Max 5 password reset requests per hour per IP to prevent email bombing
 const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req: Request, res: Response) => {
@@ -57,10 +56,10 @@ const forgotPasswordLimiter = rateLimit({
 });
 
 // ── Resend-verification rate limiter ──────────────────
-// Max 3 resend attempts per hour per IP
+// Max 5 resend attempts per hour per IP
 const resendVerificationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req: Request, res: Response) => {
