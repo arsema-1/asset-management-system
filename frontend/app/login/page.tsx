@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [needsVerification, setNeedsVerification] = useState(false);
@@ -25,8 +24,8 @@ export default function LoginPage() {
     setNeedsVerification(false);
     try {
       const { token, user } = await auth.login(email, password);
-      setToken(token, remember);
-      setUser(user, remember);
+      setToken(token);
+      setUser(user);
       router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password.';
@@ -129,20 +128,6 @@ export default function LoginPage() {
                   </span>
                 </button>
               </div>
-            </div>
-
-            {/* Remember */}
-            <div className="flex items-center gap-sm py-xs">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded border-outline"
-              />
-              <label htmlFor="remember" className="text-label-md text-on-surface-variant">
-                Remember this device for 30 days
-              </label>
             </div>
 
             {error && !needsVerification && (

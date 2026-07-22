@@ -6,15 +6,11 @@ export function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-export function setToken(token: string, rememberMe?: boolean): void {
+export function setToken(token: string): void {
   localStorage.setItem('token', token);
-  // Always set the cookie so the middleware can find it, even on page refresh.
-  // Default 30 days if rememberMe is true, otherwise session-length (no max-age = session cookie)
-  const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined;
-  const cookie = maxAge
-    ? `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`
-    : `token=${token}; path=/; SameSite=Lax`;
-  document.cookie = cookie;
+  // Set a session cookie so the middleware can find it on page refresh.
+  // Expiry is managed via setUser() which overrides this with a role-based max-age.
+  document.cookie = `token=${token}; path=/; SameSite=Lax`;
 }
 
 export function removeToken(): void {
@@ -40,16 +36,10 @@ export async function logoutUser(): Promise<void> {
   }
 }
 
-export function setUser(user: User, rememberMe?: boolean): void {
+export function setUser(user: User): void {
   localStorage.setItem('user', JSON.stringify(user));
-  // Respect the "remember me" preference. If not set, default to role-based expiry:
-  // 7 days for employees, 1 day for admins. If rememberMe is true, use 30 days.
-  let maxAge: number;
-  if (rememberMe) {
-    maxAge = 30 * 24 * 60 * 60; // 30 days
-  } else {
-    maxAge = user.role === 'admin' ? 24 * 60 * 60 : 7 * 24 * 60 * 60;
-  }
+  // Role-based expiry: admins get 1 day, employees get 7 days
+  const maxAge = user.role === 'admin' ? 24 * 60 * 60 : 7 * 24 * 60 * 60;
   // Set both token and role cookies with matching expiry
   const token = localStorage.getItem('token');
   if (token) {
