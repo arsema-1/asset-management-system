@@ -2,8 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { logoutUser } from '@/lib/api';
 import type { SidebarConfig } from '@/lib/types';
 
 interface Props {
@@ -13,7 +14,9 @@ interface Props {
 
 export default function SidebarBase({ config, id }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
@@ -112,6 +115,23 @@ export default function SidebarBase({ config, id }: Props) {
             </Link>
           ))}
         </div>
+
+        {/* Sign Out */}
+        <button
+          onClick={async () => {
+            if (loggingOut) return;
+            setLoggingOut(true);
+            await logoutUser();
+            router.push('/login');
+          }}
+          disabled={loggingOut}
+          className="mt-2 flex w-full items-center gap-md p-sm rounded-lg text-label-md text-error hover:bg-error-container transition-colors disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined">
+            {loggingOut ? 'sync' : 'logout'}
+          </span>
+          <span>{loggingOut ? 'Signing out…' : 'Sign Out'}</span>
+        </button>
       </aside>
     </>
   );

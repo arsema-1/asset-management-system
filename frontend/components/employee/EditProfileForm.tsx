@@ -6,7 +6,7 @@ import { useUser } from '@/lib/hooks';
 
 export default function EditProfileForm() {
   const user = useUser();
-  const [localUser, setLocalUser] = useState(getUser());
+  const [localUser, setLocalUser] = useState<ReturnType<typeof getUser>>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');

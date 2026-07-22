@@ -7,10 +7,10 @@ import MyCurrentAssets from '@/components/employee/MyCurrentAssets';
 import ActivityFeed from '@/components/employee/ActivityFeed';
 
 export default function EmployeeDashboard() {
-  const [user, setUser] = useState(getUser());
+  const [user, setUser] = useState<ReturnType<typeof getUser>>(null);
   const userName = user ? `${user.first_name} ${user.last_name}` : 'Employee';
 
-  // Defer localStorage read to avoid hydration mismatch
+  // Read user from localStorage on the client only (avoids hydration mismatch)
   useEffect(() => {
     setUser(getUser());
   }, []);

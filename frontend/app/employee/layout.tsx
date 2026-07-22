@@ -1,10 +1,12 @@
 import EmployeeSidebar from '@/components/employee/EmployeeSidebar';
 import EmployeeTopNav from '@/components/employee/EmployeeTopNav';
 import AuthGuard from '@/components/shared/AuthGuard';
+import SessionTimeoutProvider from '@/components/shared/SessionTimeoutProvider';
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard requiredRole="employee">
+      <SessionTimeoutProvider>
       <div className="bg-background text-on-background min-h-screen">
         <EmployeeSidebar />
         <main className="lg:ml-sidebar-expanded min-h-screen flex flex-col">
@@ -23,6 +25,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           </footer>
         </main>
       </div>
+      </SessionTimeoutProvider>
     </AuthGuard>
   );
 }

@@ -6,9 +6,12 @@ const PUBLIC_PATHS = ['/', '/login', '/signup', '/forgot-password', '/reset-pass
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes and static files
+  // Check for auth token in cookies (set at login)
+  const token = request.cookies.get('token')?.value;
+  const role = request.cookies.get('role')?.value;
+
+  // Allow static files and API routes
   if (
-    PUBLIC_PATHS.includes(pathname) ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/images') ||
@@ -17,8 +20,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for auth token in cookies (set at login)
-  const token = request.cookies.get('token')?.value;
+  // Root / and public auth pages — if already logged in, go to dashboard
+  if (PUBLIC_PATHS.includes(pathname)) {
+    if (token && role) {
+      const dashboard = role === 'admin' ? '/admin/dashboard' : '/employee/dashboard';
+      return NextResponse.redirect(new URL(dashboard, request.url));
+    }
+    return NextResponse.next();
+  }
 
   if (!token) {
     const loginUrl = new URL('/login', request.url);
@@ -27,8 +36,6 @@ export function middleware(request: NextRequest) {
   }
 
   // Role-based route guard
-  const role = request.cookies.get('role')?.value;
-
   if (pathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(new URL('/employee/dashboard', request.url));
   }

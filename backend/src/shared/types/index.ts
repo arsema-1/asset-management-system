@@ -33,9 +33,15 @@ export function forbidden(res: Response, message = 'Forbidden'): Response {
   return res.status(403).json({ success: false, message } satisfies ApiResponse);
 }
 
+import { config } from '../../config';
+
 export function serverError(res: Response, err: unknown, context = 'Server error'): Response {
   console.error(`[${context}]`, err);
-  return res.status(500).json({ success: false, message: 'Server error' } satisfies ApiResponse);
+  const message =
+    config.nodeEnv === 'production'
+      ? 'Server error'
+      : err instanceof Error ? err.message : String(err);
+  return res.status(500).json({ success: false, message } satisfies ApiResponse);
 }
 
 export function conflict(res: Response, message = 'Conflict'): Response {

@@ -25,8 +25,8 @@ export default function LoginPage() {
     setNeedsVerification(false);
     try {
       const { token, user } = await auth.login(email, password);
-      setToken(token);
-      setUser(user);
+      setToken(token, remember);
+      setUser(user, remember);
       router.push(user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password.';

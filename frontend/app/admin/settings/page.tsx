@@ -1,40 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { removeToken } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
 const TIMEOUT_KEY = 'session_timeout_minutes';
 
-function useSessionTimeout(minutes: number) {
-  const router = useRouter();
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const reset = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-    if (minutes <= 0) return;
-    timer.current = setTimeout(() => {
-      removeToken();
-      router.replace('/login?reason=timeout');
-    }, minutes * 60 * 1000);
-  }, [minutes, router]);
-
-  useEffect(() => {
-    const events = ['mousemove', 'keydown', 'click', 'scroll'];
-    events.forEach(e => window.addEventListener(e, reset));
-    reset();
-    return () => {
-      events.forEach(e => window.removeEventListener(e, reset));
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [reset]);
-}
-
 function SecuritySettings() {
-  const [timeout, setTimeoutMinutes] = useState<number>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(TIMEOUT_KEY) : null;
-    return saved ? parseInt(saved, 10) : 30;
-  });
+  const [timeout, setTimeoutMinutes] = useState<number>(30);
+
+  // Read saved preference client-side to avoid hydration mismatch
+  useEffect(() => {
+    const saved = localStorage.getItem(TIMEOUT_KEY);
+    if (saved) {
+      setTimeoutMinutes(parseInt(saved, 10));
+    }
+  }, []);
 
   const handleTimeoutChange = (val: number) => {
     setTimeoutMinutes(val);
@@ -83,12 +62,6 @@ function SecuritySettings() {
 }
 
 export default function AdminSettingsPage() {
-  // Read saved timeout from localStorage and activate it
-  const savedTimeout = typeof window !== 'undefined'
-    ? parseInt(localStorage.getItem(TIMEOUT_KEY) ?? '30', 10)
-    : 30;
-  useSessionTimeout(savedTimeout);
-
   return (
     <>
       <div className="flex items-center justify-between mb-xl">

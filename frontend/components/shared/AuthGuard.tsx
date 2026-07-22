@@ -2,7 +2,7 @@
 
 import { useEffect, createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, getUser, removeToken } from '@/lib/api';
+import { getToken, getUser, removeToken, logoutUser } from '@/lib/api';
 
 interface AuthContextValue {
   logout: () => void;
@@ -17,8 +17,8 @@ export function useAuth() {
 export default function AuthGuard({ children, requiredRole }: { children: React.ReactNode; requiredRole: 'admin' | 'employee' }) {
   const router = useRouter();
 
-  const logout = useCallback(() => {
-    removeToken();
+  const logout = useCallback(async () => {
+    await logoutUser();
     router.push('/login');
   }, [router]);
 

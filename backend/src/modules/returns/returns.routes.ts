@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../../database/db';
-import { ok, created, notFound, badRequest } from '../../shared/types';
+import { ok, created, notFound, badRequest, serverError } from '../../shared/types';
 import { authenticate } from '../../middleware/auth';
 import { withTransaction, notifyAdmins, notifyUser, logActivity, getFullName } from '../../shared/utils';
 
@@ -88,8 +88,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       created(res, rows[0], 'Return request submitted successfully. Asset remains assigned until admin approval.');
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    serverError(res, err, 'POST /returns');
   }
 });
 
@@ -135,8 +134,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 
     ok(res, rows, 'Return requests retrieved');
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    serverError(res, err, 'GET /returns');
   }
 });
 
@@ -170,8 +168,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
 
     ok(res, rows[0], 'Return request retrieved');
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    serverError(res, err, 'GET /returns/:id');
   }
 });
 
@@ -331,8 +328,7 @@ router.put('/:id', authenticate, async (req: Request, res: Response) => {
       }
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    serverError(res, err, 'PUT /returns/:id');
   }
 });
 

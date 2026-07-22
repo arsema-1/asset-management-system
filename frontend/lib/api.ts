@@ -6,8 +6,15 @@ export function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-export function setToken(token: string): void {
+export function setToken(token: string, rememberMe?: boolean): void {
   localStorage.setItem('token', token);
+  // Always set the cookie so the middleware can find it, even on page refresh.
+  // Default 30 days if rememberMe is true, otherwise session-length (no max-age = session cookie)
+  const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined;
+  const cookie = maxAge
+    ? `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`
+    : `token=${token}; path=/; SameSite=Lax`;
+  document.cookie = cookie;
 }
 
 export function removeToken(): void {
@@ -18,10 +25,31 @@ export function removeToken(): void {
   document.cookie = 'role=; path=/; max-age=0';
 }
 
-export function setUser(user: User): void {
+/**
+ * Full logout: hits the backend to invalidate the token, then clears
+ * all local state (localStorage + cookies). Safe to call even if the
+ * backend request fails — local state is always cleared.
+ */
+export async function logoutUser(): Promise<void> {
+  try {
+    await auth.logout();
+  } catch {
+    // Backend might be unreachable; still clear local state
+  } finally {
+    removeToken();
+  }
+}
+
+export function setUser(user: User, rememberMe?: boolean): void {
   localStorage.setItem('user', JSON.stringify(user));
-  // Role-based session: 7 days for employees, 1 day for admins
-  const maxAge = user.role === 'admin' ? 24 * 60 * 60 : 7 * 24 * 60 * 60;
+  // Respect the "remember me" preference. If not set, default to role-based expiry:
+  // 7 days for employees, 1 day for admins. If rememberMe is true, use 30 days.
+  let maxAge: number;
+  if (rememberMe) {
+    maxAge = 30 * 24 * 60 * 60; // 30 days
+  } else {
+    maxAge = user.role === 'admin' ? 24 * 60 * 60 : 7 * 24 * 60 * 60;
+  }
   // Set both token and role cookies with matching expiry
   const token = localStorage.getItem('token');
   if (token) {
@@ -46,6 +74,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+
+  // 401 — token expired or invalid; clear local state and redirect to login
+  if (res.status === 401) {
+    removeToken();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login?reason=session_expired';
+    }
+    throw new Error('Session expired. Please sign in again.');
+  }
+
   const json = await res.json();
 
   if (!res.ok) {

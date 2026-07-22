@@ -1,10 +1,12 @@
 import Sidebar from '@/components/admin/Sidebar';
 import TopNav from '@/components/admin/TopNav';
 import AuthGuard from '@/components/shared/AuthGuard';
+import SessionTimeoutProvider from '@/components/shared/SessionTimeoutProvider';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard requiredRole="admin">
+      <SessionTimeoutProvider>
       <div className="bg-surface text-on-surface flex min-h-screen">
         <Sidebar />
         <main className="lg:ml-sidebar-expanded flex-1 flex flex-col min-w-0">
@@ -23,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </footer>
         </main>
       </div>
+      </SessionTimeoutProvider>
     </AuthGuard>
   );
 }

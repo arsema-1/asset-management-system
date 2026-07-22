@@ -18,7 +18,7 @@ CREATE TYPE request_status AS ENUM ('pending', 'approved', 'rejected', 'complete
 CREATE TYPE maintenance_status AS ENUM ('pending', 'in_progress', 'completed', 'cancelled');
 CREATE TYPE maintenance_type AS ENUM ('hardware_repair', 'software_update', 'routine_check', 'inspection', 'replacement');
 CREATE TYPE assignment_status AS ENUM ('active', 'overdue', 'returned');
-CREATE TYPE return_status AS ENUM ('pending', 'approved', 'received', 'inspected', 'completed');
+CREATE TYPE return_status AS ENUM ('pending', 'approved', 'received', 'inspected', 'completed', 'rejected');
 CREATE TYPE employee_status AS ENUM ('active', 'inactive', 'on_leave');
 CREATE TYPE notification_type AS ENUM ('assignment', 'request', 'maintenance', 'return', 'system');
 
